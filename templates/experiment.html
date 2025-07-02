@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="templates/experiment.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script src="https://kit.fontawesome.com/e7dfeae16b.js" crossorigin="anonymous"></script>
+  </head>
+<body>
+    <!-- Sidebar -->
+    <section id="menu">
+        <div class="logo">
+            <h3>Dunder Mifflin</h3>
+        </div>
+        <ul class="items">
+            <li><i class="fa-solid fa-table-columns"></i><a href="#">Dashboard</a></li>
+            <li><i class="fa-solid fa-user-group"></i><a href="#">Visitors</a></li>
+            <li><i class="fa-solid fa-calendar"></i><a href="#">Approval</a></li>
+            <li><i class="fa-solid fa-chart-simple"></i><a href="#">Analytics</a></li>
+            <li><i class="fa-solid fa-gear"></i><a href="#">Settings</a></li>
+        </ul>
+    </section>
+
+    <!-- Main Content -->
+    <section id="interface">
+        <!-- Top Navigation Bar -->
+        <div class="navigation">
+            <div class="search-bar">
+                <input type="text" placeholder="Search...">
+                <i class="fa fa-search"></i>
+            </div>
+            <div class="profile">
+                <img class="profile_image" src="images/icc-balayan.jpg" alt="Profile">
+            </div>
+        </div>
+
+        <!-- Dashboard Content -->
+        <div class="dashboard-content">
+          <h1>Dashboard</h1>
+
+          <div class="dashboard-layout">
+              <!-- Table Section -->
+              <div class="table-section">
+                  <h2>Recent Check-ins</h2>
+                  <table>
+                      <thead>
+                          <tr>
+                              <th>Name</th>
+                              <th>Check-in Time</th>
+                              <th>Purpose</th>
+                          </tr>
+                      </thead>
+                      <tbody>
+                          <tr>
+                              <td>John Doe</td>
+                              <td>8:01 AM</td>
+                              <td>Business Meeting</td>
+                          </tr>
+                          <tr>
+                              <td>Jane Smith</td>
+                              <td>8:15 AM</td>
+                              <td>Interview</td>
+                          </tr>
+                          <tr>
+                              <td>Michael Scott</td>
+                              <td>9:00 AM</td>
+                              <td>Sales Pitch</td>
+                          </tr>
+                          <!-- Add more rows as needed -->
+                      </tbody>
+                  </table>
+              </div>
+
+              <!-- Cards Section -->
+                <div class="cards">
+                  <div class="card">
+                      <div class="card-icon">
+                          <i class="fa-solid fa-users"></i>
+                      </div>
+                      <h3>Visitor Today</h3>
+                      <p>25</p>
+                  </div>
+                  <div class="card">
+                      <div class="card-icon">
+                          <i class="fa-solid fa-user-check"></i>
+                      </div>
+                      <h3>Checked-in Visitor</h3>
+                      <p>15</p>
+                  </div>
+                  <div class="card">
+                      <div class="card-icon">
+                          <i class="fa-solid fa-clock"></i>
+                      </div>
+                      <h3>Pending Approval</h3>
+                      <p>10</p>
+                  </div>
+</div>
+          </div>
+      </div>
+    </section>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VMS Request</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/Request.css') }}">  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+</head>
+<body>
+  
+   {% extends 'base.html' %}
+
+   {% block title %}Request{% endblock %}
+
+   {% block content %}
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Header -->
+    <header class="header">
+      <h1 class="header-title">Request Management</h1>
+      {% include 'includes/user_menu.html' %}
+    </header>
+
+    <!-- Request Content -->
+    <main class="request-content">
+      <!-- Request Table Section -->
+      <div class="table-section animate-in">
+        <div class="table-header">
+          <h2 class="table-title">Visitor Requests</h2>
+          <div>
+            <form method="GET" class="filter-form" action="{{ url_for('request_bp.request_page') }}">
+              <select name="per_page">
+                <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+                <option value="25" {% if per_page == 25 %}selected{% endif %}>25</option>
+                <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+              </select>
+              <button type="submit">
+                <i class="fas fa-filter"></i> Apply
+              </button>
+            </form>
+          </div>
+        </div>
+        <div style="overflow-x: auto;">
+          <table class="requests-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Purpose</th>
+                <th>Visiting</th>
+                <th>Code</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if requests %}
+                {% for request in requests %}
+                <tr class="animate-in">
+                  <td>{{ (pagination.page - 1) * pagination.per_page + loop.index }}</td>
+                  <td>{{ request.name }}</td>
+                  <td>{{ request.email }}</td>
+                  <td>{{ request.number }}</td>
+                  <td>{{ request.purpose }}</td>
+                  <td>{{ request.person_to_visit }}</td>
+                  <td><code style="background: var(--secondary-color); padding: 4px 8px; border-radius: 4px; font-size: 12px;">{{ request.unique_code }}</code></td>
+                  <td>
+                    <form method="POST" action="{{ url_for('request_bp.update_status', request_id=request.id) }}">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <select name="status" class="selection-process" onchange="this.form.submit()">
+                        <option value="" disabled {% if not request.status or request.status == 'Pending' %}selected{% endif %}>Select</option>
+                        <option value="Approve" {% if request.status == 'Approve' %}selected{% endif %}>Approve</option>
+                        <option value="Reject" {% if request.status == 'Reject' %}selected{% endif %}>Reject</option>
+                      </select>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="8">
+                    <div class="empty-state">
+                      <i class="fas fa-user-clock"></i>
+                      <h3>No requests yet</h3>
+                      <p>Visitor requests will appear here when submitted</p>
+                    </div>
+                  </td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+          {% if pagination and pagination.pages > 1 %}
+          <div class="pagination-container animate-in">
+            <nav aria-label="Requests pagination">
+              <ul class="pagination-list">
+                <li class="pagination-item">
+                  <a class="pagination-link" href="{{ url_for('request_bp.request_page', page=1, per_page=per_page) }}">
+                    <i class="fas fa-angle-double-left"></i> First 
+                  </a>
+                </li>
+                <li>
+                  <a class="pagination-link" href="{{ url_for('request_bp.request_page', page=pagination.prev_num, per_page=per_page) }}">
+                    <i class="fas fa-angle-left"></i> Prev
+                  </a>
+                </li>
+                <li>
+                  Page {{ pagination.page }} of {{ pagination.pages }}
+                </li>
+                <li>
+                  <a class="pagination-link" href="{{ url_for('request_bp.request_page', page=pagination.next_num, per_page=per_page) }}">
+                    Next <i class="fas fa-angle-right"></i>
+                  </a>
+                </li>
+                <li>
+                  <a class="pagination-link" href="{{ url_for('request_bp.request_page', page=pagination.pages, per_page=per_page) }}">
+                    Last <i class="fas fa-angle-double-right"></i>
+                  </a>
+                </li>
+              </ul>
+            </nav>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- QR Scanner Section -->
+        <div class="scanner-section animate-in">
+          <div class="scanner-header">
+            <h3 class="scanner-title">Visitor QR Code Check-In/Out</h3>
+            <p class="scanner-subtitle">Scan a QR code or manually enter a unique code</p>
+          </div>
+
+          <div class="code-input-section">
+            <form id="code-form" class="code-form" method="POST" action="{{ url_for('scan.scan_checkin') }}">
+              <input type="text" id="code-input" class="code-input" placeholder="Scan or enter visitor code" autofocus required>
+              <button type="submit" class="scanner-btn primary">Submit</button>
+            </form>
+          </div>
+
+          <div id="result-display" class="result-display">Awaiting scan...</div>
+        </div>
+    </main>
+  </div>
+
+  <!-- Notification -->
+  <div id="notification" class="notification"></div>
+
+  <!-- QR Scanner Script -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="{{ url_for('static', filename='js/Scanner.js') }}"defer></script>
+
+  <!-- Socket.IO for real-time updates -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    const socket = io();
+
+    socket.on('request_update', function() {
+      console.log('Received request_update');
+      location.reload();
+    });
+  </script>
+
+  {% endblock %}
+  </body>
+</html>

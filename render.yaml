@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: vms-app
+    env: python
+    plan: free
+    buildCommand: |
+      pip install -r requirements.txt
+      flask db upgrade
+    startCommand: |
+      python run.py
+    envVars:
+      - key: SECRET_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+    autoDeploy: true

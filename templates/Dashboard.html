@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VMS Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/Dashboard.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+
+</head>
+<body>
+
+{% extends 'base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Header -->
+    <header class="header">
+      <h1 class="header-title">Dashboard Overview</h1>
+      {% include 'includes/user_menu.html' %}
+    </header>
+
+    <!-- Dashboard Content -->
+    <main class="dashboard-content">
+      <!-- Stats Cards -->
+      <div class="stats-grid">
+        <div class="stat-card animate-in">
+          <div class="stat-header">
+            <div>
+              <div class="stat-title">Visitors Today</div>
+              <div class="stat-value">{{ visitor_today }}</div>
+            </div>
+            <div class="stat-icon visitors">
+              <i class="fas fa-users"></i>
+            </div>
+          </div>
+        </div>
+        <div class="stat-card animate-in">
+          <div class="stat-header">
+            <div>
+              <div class="stat-title">Currently Checked In</div>
+              <div class="stat-value">{{ checked_in }}</div>
+            </div>
+            <div class="stat-icon checked-in">
+              <i class="fas fa-user-check"></i>
+            </div>
+          </div>
+        </div>
+        <div class="stat-card animate-in">
+          <div class="stat-header">
+            <div>
+              <div class="stat-title">Pending Requests</div>
+              <div class="stat-value">{{ pending_requests }}</div>
+            </div>
+            <div class="stat-icon pending">
+              <i class="fas fa-clock"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Visitors Table -->
+      <div class="table-section animate-in">
+        <div class="table-header">
+          <h2 class="table-title">Recent Visitors</h2>
+        </div>
+        <table class="visitors-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th>Purpose</th>
+              <th>Visiting</th>
+              <th>Status</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if logs %}
+              {% for log in logs %}
+              <tr class="animate-in">
+                <td>{{ loop.index }}.</td>
+                <td>{{ log.name }}</td>
+                <td>{{ log.purpose }}</td>
+                <td>{{ log.person_to_visit }}</td>
+                <td>
+                  <span class="status-badge {% if log.status == 'Checked-Out' %}status-out{% else %}status-in{% endif %}">
+                  {{ log.status }} </span>
+                </td>
+                <td>{{ log.timestamp | ph_time }}</td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="5">
+                  <div class="empty-state">
+                    <i class="fas fa-users"></i>
+                    <h3>No visitors yet</h3>
+                    <p>Visitors will appear here once they check in</p>
+                  </div>
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+  const socket = io();
+
+  socket.on('dashboard_update', function() {
+    // Option 1: Reload the page (simple)
+    console.log('Received dashboard_update event');
+    location.reload();
+
+    // Option 2: Use AJAX to fetch and update only the stats/table (advanced)
+    
+  });
+</script>
+
+{% endblock %}
+</body>
+</html>

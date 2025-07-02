@@ -1,0 +1,63 @@
+project-root/
+├── app/                          ← ✅ Your application package
+│   ├── __init__.py               ← ✅ App factory and setup
+│   ├── models.py                 ← ✅ Your existing database models
+│   ├── mailer.py                 ← ✅ Email QR code logic
+│   ├── utils/
+│   │   └── helpers.py            ← ✅ Secure code gen, time filter
+│   └── routes/
+│       ├── __init__.py           ← ✅ (can be empty)
+│       ├── main.py               ← ✅ dashboard, logs, setting, analytic
+│       ├── download_log.py       ← ✅ log export
+│       ├── analytic.py           ← ✅ Charts backend
+│       ├── auth.py               ← ✅ login page
+│       ├── request.py            ← ✅ request, submit-request, update-status
+│       └── scan.py               ← ✅ QR code check-in/out logic
+├── instance/
+│   ├── vms.db
+│   └── VMSData.db
+├── migrations/
+│   ├── alembic.ini
+│   ├── env.py
+│   ├── README
+│   ├── script.py.mako
+│   ├── __pycache__/
+│   └── versions/
+├── scripts/                      ← ✅ (if present in your explorer)
+├── static/                       ← ✅ CSS, JS, images
+│   ├── css/
+│   │   ├── Analytic.css
+│   │   ├── Dashboard.css
+│   │   ├── experiment.css
+│   │   ├── Logs.css
+│   │   ├── Login.css
+│   │   ├── Request.css
+│   │   └── Visitor-register.css
+│   ├── images/
+│   ├── includes/
+│   │   └── navbar.html
+│   └── js/
+│       ├── Analytic.js
+│       ├── Control.js
+│       ├── approveRejectchart.js
+│       ├── dataProcessor.js
+│       ├── durationChart.js
+│       ├── purposeChart.js
+│       ├── topVisitorChart.js
+│       ├── visitorLogs.js
+│       └── visitorTrendChart.js
+├── templates/                    ← ✅ Your HTML files (Analytic.html, Dashboard.html, etc.)
+│   ├── Analytic.html
+│   ├── base.html
+│   ├── Dashboard.html
+│   ├── experiment.html
+│   ├── log-pdf-template.html
+│   ├── Login.html
+│   ├── Online-reg.html
+│   ├── Request.html
+│   └── Visitor-register.html
+├── .env                          ← ✅ Contains mail credentials
+├── app.py                        ← ✅ (if present in your explorer)
+├── create_db.py                  ← ✅ For initializing database tables
+├── run.py                        ← ✅ Launches the app using `create_app()`
+└── Filemap.txt                   ← ✅ This file

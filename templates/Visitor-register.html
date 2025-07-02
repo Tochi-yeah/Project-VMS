@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visitor Registration - ICC Balayan</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/Visitor-register.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="left">
+            <img src="{{ url_for('static', filename='images/icc-balayan.jpg') }}" alt="Logo" class="logo">
+            <h1>Welcome to ICC Balayan!</h1>
+            <p>Register to visit.</p>
+        </div>
+        <div class="right">
+            <h2 class="form-title">Visitor Registration</h2>
+            <p class="form-subtitle">Enter your details:</p>
+            <form action="/submit-request" method="POST">
+                <div class="name-group">
+                    <div class="form-group">
+                        <label for="first_name">First Name</label>
+                        <input type="text" id="first_name" name="first_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="last_name">Last Name</label>
+                        <input type="text" id="last_name" name="last_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="middle_initial">M.I.</label>
+                        <input type="text" id="middle_initial" placeholder="Optional" name="middle_initial" maxlength="1">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="cell_number">Cellular Number</label>
+                    <input type="text" id="cell_number" name="cell_number" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <div class="email-input-group">
+                        <input type="email" id="email" name="email">
+                        <div class="checkbox-inline">
+                            <input type="checkbox" id="no_email" name="no_email">
+                            <label for="no_email">No Email</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="purpose">Purpose of Visit</label>
+                    <select id="purpose" name="purpose" required>
+                        <option value="" disabled selected>Select Purpose</option>
+                        <option value="Meeting">Meeting</option>
+                        <option value="Campus Tour">Campus Tour</option>
+                        <option value="Event">Event</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <div class="other-purpose-group" id="other-purpose">
+                        <label for="other_purpose">Specify Other Purpose</label>
+                        <input type="text" id="other_purpose" name="other_purpose">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="person_to_visit">Person to Visit</label>
+                    <input type="text" id="person_to_visit" name="person_to_visit" required>
+                </div>
+                <button type="submit" class="submit-btn">Register</button>
+            </form>
+        </div>
+    </div>
+    <script>
+        const purposeSelect = document.getElementById('purpose');
+        const otherPurposeDiv = document.getElementById('other-purpose');
+        const otherPurposeInput = document.getElementById('other_purpose');
+
+        purposeSelect.addEventListener('change', function() {
+            if (this.value === 'Other') {
+                otherPurposeDiv.classList.add('show');
+                otherPurposeInput.setAttribute('required', 'required');
+            } else {
+                otherPurposeDiv.classList.remove('show');
+                otherPurposeInput.removeAttribute('required');
+                otherPurposeInput.value = '';
+            }
+        });
+
+        const noEmailCheckbox = document.getElementById('no_email');
+        const emailInput = document.getElementById('email');
+
+        noEmailCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                emailInput.removeAttribute('required');
+                emailInput.value = '';
+                emailInput.disabled = true;
+            } else {
+                emailInput.disabled = false;
+                emailInput.setAttribute('required', 'required');
+            }
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'94fa23d1890e5de4',t:'MTc0OTkwNzM4Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
