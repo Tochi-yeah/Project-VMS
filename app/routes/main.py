@@ -8,6 +8,10 @@ from app.utils.helpers import login_required
 
 bp = Blueprint('main', __name__)
 
+@bp.route("/")
+def index():
+    return redirect(url_for("auth.login"))
+
 @bp.route("/dashboard")
 @login_required
 def dashboard():
