@@ -17,7 +17,7 @@ db = SQLAlchemy()
 mail = Mail()
 migrate = Migrate()
 csrf = CSRFProtect()
-socketio = SocketIO(cors_allowed_origins="*") 
+socketio = SocketIO(cors_allowed_origins="*")  # Add this line
 limiter = Limiter(key_func=get_remote_address)  # make global instance
 
 def create_app():
