@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import Boolean
 from app import db
 import pytz
+from sqlalchemy.dialects.postgresql import TIMESTAMP
 
 
 # Pending requests table
@@ -14,7 +15,7 @@ class Request(db.Model):
     purpose = db.Column(db.String(200), nullable=False)
     person_to_visit = db.Column(db.String(100), nullable=False)
     status = db.Column(db.String(20), default="Pending")  # Optional: for future use
-    timestamp = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(pytz.timezone("Asia/Manila")))
+    timestamp = db.Column(TIMESTAMP(timezone=True), nullable=False)
     unique_code = db.Column(db.String(10), unique=True, nullable=False)
     code_used = db.Column(db.Boolean, default=False)
 
@@ -30,7 +31,7 @@ class VisitorLog(db.Model):
     purpose = db.Column(db.String(200), nullable=False)
     person_to_visit = db.Column(db.String(100), nullable=False)
     status = db.Column(db.String(20), nullable=False)  # 'Checked-In' or 'Checked-Out'
-    timestamp = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(pytz.timezone("Asia/Manila")))
+    timestamp = db.Column(TIMESTAMP(timezone=True), nullable=False)
     unique_code = db.Column(db.String(10))
 
     def __repr__(self):
