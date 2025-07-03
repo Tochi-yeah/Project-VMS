@@ -1,10 +1,9 @@
 # app/routes/main.py
 from flask import Blueprint, render_template, request, flash, redirect, session, url_for
-from datetime import datetime
-import pytz
 from app.models import VisitorLog, Request, db, User
 from werkzeug.security import generate_password_hash
-from app.utils.helpers import login_required
+from app.utils.helpers import login_required, get_current_time
+from datetime import datetime
 
 bp = Blueprint('main', __name__)
 
@@ -15,7 +14,7 @@ def index():
 @bp.route("/dashboard")
 @login_required
 def dashboard():
-    today = datetime.now(pytz.timezone("Asia/Manila")).date()
+    today = get_current_time().date()
 
     visitor_today = db.session.query(VisitorLog.unique_code).filter(
         db.func.date(VisitorLog.timestamp) == today,
@@ -65,7 +64,7 @@ def logs():
             return render_template("Logs.html", logs=[], filter_date=filter_date, search_query=search_query, pagination=None, per_page=per_page)
     else:
         if not search_query:
-            filter_date_obj = datetime.now(pytz.timezone("Asia/Manila")).date()
+            filter_date_obj = get_current_time().date()
             logs_query = logs_query.filter(db.func.date(VisitorLog.timestamp) == filter_date_obj)
 
     if search_query:
@@ -94,4 +93,3 @@ def analytic():
 def setting():
     user = User.query.get(session['user_id'])
     return render_template("Setting.html", user=user)
-
