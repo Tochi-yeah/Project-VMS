@@ -3,6 +3,7 @@ from flask import Blueprint, request, jsonify
 from app.models import db, VisitorLog, Request
 from app import csrf
 from app import socketio
+from datetime import datetime
 
 bp = Blueprint('scan', __name__)
 
@@ -33,7 +34,8 @@ def scan_checkin():
             purpose=request_record.purpose,
             person_to_visit=request_record.person_to_visit,
             status="Checked-Out",
-            unique_code=request_record.unique_code
+            unique_code=request_record.unique_code,
+            timestamp=datetime.utcnow()
         )
         db.session.add(new_log)
         request_record.code_used = True
@@ -48,7 +50,8 @@ def scan_checkin():
             purpose=request_record.purpose,
             person_to_visit=request_record.person_to_visit,
             status="Checked-In",
-            unique_code=request_record.unique_code
+            unique_code=request_record.unique_code,
+            timestamp=datetime.utcnow()
         )
         db.session.add(new_log)
         db.session.commit()

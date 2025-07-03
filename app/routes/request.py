@@ -5,6 +5,7 @@ from app.utils.helpers import generate_unique_secure_code
 from app.mailer import send_visitor_qr_email
 from app.utils.helpers import login_required
 from app import csrf, socketio, limiter
+from datetime import datetime
 
 bp = Blueprint('request_bp', __name__)
 
@@ -62,7 +63,8 @@ def submit_request():
         number=number,
         purpose=purpose,
         person_to_visit=person_to_visit,
-        unique_code=unique_code
+        unique_code=unique_code,
+        timestamp=datetime.utcnow()
     )
     db.session.add(new_request)
     db.session.commit()

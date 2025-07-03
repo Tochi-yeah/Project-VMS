@@ -1,4 +1,3 @@
-# app/utils/helpers.py
 import string
 import secrets
 from app.models import Request
@@ -25,8 +24,8 @@ def generate_unique_secure_code(length=8):
             return code
 
 def get_current_time():
-    philippines_tz = pytz.timezone('Asia/Manila')
-    return datetime.now(philippines_tz)
+    manila_tz = pytz.timezone('Asia/Manila')
+    return datetime.now(manila_tz)
 
 def convert_to_ph_time(dt):
     if dt is None:

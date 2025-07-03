@@ -37,7 +37,8 @@ def get_visit_durations(start_date=None, end_date=None):
         VisitorLog.unique_code,
         db.func.min(VisitorLog.timestamp).label("check_in"),
         db.func.max(VisitorLog.timestamp).label("check_out")
-    )
+    ).group_by(VisitorLog.name, VisitorLog.unique_code)
+    
     if start_date and end_date:
         try:
             start_dt = datetime.strptime(start_date, "%Y-%m-%d")

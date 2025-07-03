@@ -3,7 +3,8 @@ from flask import Blueprint, render_template, request, flash, redirect, session,
 from app.models import VisitorLog, Request, db, User
 from werkzeug.security import generate_password_hash
 from app.utils.helpers import login_required, get_current_time
-from datetime import datetime
+from datetime import datetime, timedelta
+import pytz
 
 bp = Blueprint('main', __name__)
 
@@ -14,10 +15,15 @@ def index():
 @bp.route("/dashboard")
 @login_required
 def dashboard():
-    today = get_current_time().date()
+    # Manila timezone date range for today
+    manila_tz = pytz.timezone("Asia/Manila")
+    now_manila = get_current_time()
+    start_of_day = now_manila.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(pytz.utc)
+    end_of_day = start_of_day + timedelta(days=1)
 
     visitor_today = db.session.query(VisitorLog.unique_code).filter(
-        db.func.date(VisitorLog.timestamp) == today,
+        VisitorLog.timestamp >= start_of_day,
+        VisitorLog.timestamp < end_of_day,
         VisitorLog.status == "Checked-In"
     ).distinct().count()
 
@@ -55,17 +61,29 @@ def logs():
 
     logs_query = VisitorLog.query
 
+    manila_tz = pytz.timezone("Asia/Manila")
+
     if filter_date:
         try:
-            filter_date_obj = datetime.strptime(filter_date, "%Y-%m-%d").date()
-            logs_query = logs_query.filter(db.func.date(VisitorLog.timestamp) == filter_date_obj)
+            filter_date_obj = datetime.strptime(filter_date, "%Y-%m-%d")
+            start_of_day = manila_tz.localize(filter_date_obj.replace(hour=0, minute=0, second=0, microsecond=0)).astimezone(pytz.utc)
+            end_of_day = start_of_day + timedelta(days=1)
+            logs_query = logs_query.filter(
+                VisitorLog.timestamp >= start_of_day,
+                VisitorLog.timestamp < end_of_day
+            )
         except ValueError:
             flash("Invalid date format.", "danger")
             return render_template("Logs.html", logs=[], filter_date=filter_date, search_query=search_query, pagination=None, per_page=per_page)
     else:
         if not search_query:
-            filter_date_obj = get_current_time().date()
-            logs_query = logs_query.filter(db.func.date(VisitorLog.timestamp) == filter_date_obj)
+            now_manila = get_current_time()
+            start_of_day = now_manila.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(pytz.utc)
+            end_of_day = start_of_day + timedelta(days=1)
+            logs_query = logs_query.filter(
+                VisitorLog.timestamp >= start_of_day,
+                VisitorLog.timestamp < end_of_day
+            )
 
     if search_query:
         logs_query = logs_query.filter(VisitorLog.name.ilike(f"%{search_query}%"))
