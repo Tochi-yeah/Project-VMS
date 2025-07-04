@@ -72,7 +72,7 @@ def request_status_distribution():
         Request.status,
         db.func.count(Request.id)
     )
-    # Filter by date if provided (replace 'timestamp' with your actual date field)
+
     if start_date and end_date:
         try:
             start_dt = datetime.strptime(start_date, "%Y-%m-%d")
@@ -82,9 +82,17 @@ def request_status_distribution():
             )
         except ValueError:
             pass
+
     statuses = query.group_by(Request.status).all()
-    result = [{'status': row.status, 'count': row[1]} for row in statuses]
+
+    # ✅ Force default counts for 'Approve' and 'Reject'
+    result_dict = {'Approve': 0, 'Reject': 0}
+    for row in statuses:
+        result_dict[row.status] = row[1]
+
+    result = [{'status': key, 'count': value} for key, value in result_dict.items()]
     return jsonify(result)
+
 
 @bp.route("/api/purpose_distribution")
 def purpose_distribution():
