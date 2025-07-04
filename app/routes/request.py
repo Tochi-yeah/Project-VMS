@@ -20,7 +20,7 @@ def request_page():
     requests = pagination.items
     return render_template("Request.html", requests=requests, pagination=pagination, per_page=per_page)
 
-@bp.route("/Visitor-register'")
+@bp.route("/Visitor-register")
 def online_reg():
     return render_template("Visitor-register.html")
 
