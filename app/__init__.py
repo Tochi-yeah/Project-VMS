@@ -49,6 +49,7 @@ def create_app():
     app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
     app.config['MAIL_DEFAULT_SENDER'] = 'afablejrchito@gmail.com'
     app.config['RATELIMIT_STORAGE_URI'] = "redis://127.0.0.1:6379"
+    app.config['MAIL_DEBUG'] = True
 
     if not app.config['MAIL_USERNAME'] or not app.config['MAIL_PASSWORD']:
         raise RuntimeError("Missing mail credentials in .env")

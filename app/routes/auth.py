@@ -9,7 +9,8 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from app.models import User
 from app.utils.totp import verify_totp
 from app.forms import LoginForm
-from app import db, limiter
+from app import db, limiter, mail
+
 
 bp = Blueprint('auth', __name__)
 
@@ -76,8 +77,12 @@ def forgot_password():
             reset_url = url_for('auth.reset_password', token=token, _external=True)
             msg = Message("Password Reset Request", recipients=[user.email])
             msg.body = f"To reset your password, click the following link:\n{reset_url}\nIf you did not request this, ignore this email."
-            from app import mail
-            mail.send(msg)
+            try:
+                mail.send(msg)
+            except Exception as e:
+                print("Mail sending error:", e)
+                flash("There was an issue sending the reset email. Please try again later.", "danger")
+                return redirect(url_for('auth.login'))
         flash("If the email exists, a reset link has been sent.", "info")
         return redirect(url_for('auth.login'))
     return render_template("ForgotPassword.html", form=form, show_modal=True)
