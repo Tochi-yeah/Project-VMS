@@ -76,7 +76,7 @@ def create_app():
     app.register_blueprint(profile.bp)
 
     # Register Jinja filters
-    from app.utils.helpers import convert_to_ph_time
-    app.jinja_env.filters['ph_time'] = convert_to_ph_time
+    from app.utils.helpers import convert_to_ph_time_only
+    app.jinja_env.filters['ph_time_only'] = convert_to_ph_time_only
 
     return app

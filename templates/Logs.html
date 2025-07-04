@@ -70,8 +70,10 @@
             <th>Number</th>
             <th>Purpose</th>
             <th>Person to Visit</th>
-            <th>Status | Code</th>
-            <th>Timestamp</th>
+            <th>Check-In</th>
+            <th>Check-Out</th>
+            <th>Code</th>
+            <th>Date</th>
           </tr>
         </thead>
         <tbody>
@@ -85,16 +87,24 @@
               <td>{{ log.purpose }}</td>
               <td>{{ log.person_to_visit }}</td>
               <td>
-                <span class="status-badge {% if log.status == 'Checked-Out' %}status-out{% else %}status-in{% endif %}">
-                  {{ log.status }}
-                </span>| {{ log.unique_code }}
+                <span class="status-badge status-in">{{ log.check_in_time | ph_time_only if log.check_in_time else '—' }}</span>
               </td>
-              <td>{{ log.timestamp | ph_time }}</td>
+              <td>
+                <span class="status-badge status-out">{{ log.check_out_time | ph_time_only if log.check_out_time else '—' }}</span>
+              </td>
+              <td>{{ log.unique_code }}</td>
+               <td>
+                {% if log.visit_date %}
+                  {{ log.visit_date.strftime('%B %d, %Y') }}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
             </tr>
             {% endfor %}
           {% else %}
             <tr>
-              <td colspan="8">
+              <td colspan="10">
                 <div class="empty-state">
                   <i class="fas fa-users"></i>
                   <h3>No logs yet</h3>

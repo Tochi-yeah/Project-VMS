@@ -420,7 +420,7 @@
       background: white;
       border-radius: 16px;
       box-shadow: var(--card-shadow);
-      overflow: hidden;
+      overflow-x: auto;
     }
 
     .table-header {
@@ -501,7 +501,7 @@
     .status-badge {
       padding: 6px 12px;
       border-radius: 20px;
-      font-size: 12px;
+      font-size: 16px;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.06em;

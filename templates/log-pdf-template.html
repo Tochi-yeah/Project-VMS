@@ -15,30 +15,42 @@
   <table>
     <thead>
       <tr>
-        <th>#</th>
-        <th>Name</th>
-        <th>Email</th>
-        <th>Number</th>
-        <th>Purpose</th>
-        <th>Person to Visit</th>
-        <th>Status</th>
-        <th>Code</th>
-        <th>Timestamp</th>
+          <th>#</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Number</th>
+          <th>Purpose</th>
+          <th>Person to Visit</th>
+          <th>Check-In</th>
+          <th>Check-Out</th>
+          <th>Code</th>
+          <th>Date</th>
       </tr>
     </thead>
     <tbody>
       {% for log in logs %}
-      <tr>
-        <td>{{ loop.index }}</td>
-        <td>{{ log.name }}</td>
-        <td>{{ log.email }}</td>
-        <td>{{ log.number }}</td>
-        <td>{{ log.purpose }}</td>
-        <td>{{ log.person_to_visit }}</td>
-        <td>{{ log.status }}</td>
-        <td>{{ log.unique_code }}</td>
-        <td>{{ log.timestamp|ph_time }}</td>
-      </tr>
+            <tr>
+              <td>{{ loop.index }}</th>
+              <td>{{ log.name }}</td>
+              <td>{{ log.email }}</td>
+              <td>{{ log.number }}</td>
+              <td>{{ log.purpose }}</td>
+              <td>{{ log.person_to_visit }}</td>
+              <td>
+                <span class="status-badge status-in">{{ log.check_in_time | ph_time_only if log.check_in_time else '—' }}</span>
+              </td>
+              <td>
+                <span class="status-badge status-out">{{ log.check_out_time | ph_time_only if log.check_out_time else '—' }}</span>
+              </td>
+              <td>{{ log.unique_code }}</td>
+               <td>
+                {% if log.visit_date %}
+                  {{ log.visit_date.strftime('%B %d, %Y') }}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+            </tr>
       {% endfor %}
     </tbody>
   </table>

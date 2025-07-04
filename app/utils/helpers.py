@@ -34,3 +34,11 @@ def convert_to_ph_time(dt):
         dt = dt.replace(tzinfo=pytz.utc)
     ph_dt = dt.astimezone(pytz.timezone('Asia/Manila'))
     return ph_dt.strftime("%B %#d, %Y - %#I:%M %p")
+
+def convert_to_ph_time_only(dt):
+    if dt is None:
+        return "—"
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=pytz.utc)
+    ph_dt = dt.astimezone(pytz.timezone('Asia/Manila'))
+    return ph_dt.strftime("%#I:%M %p")  # Example: 9:35 AM    
