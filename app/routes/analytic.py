@@ -71,7 +71,7 @@ def request_status_distribution():
     query = db.session.query(
         Request.status,
         db.func.count(Request.id)
-    )
+    ).filter(Request.status.in_(["Approve", "Reject"]))  # ✅ Only count Approve/Reject
 
     if start_date and end_date:
         try:
@@ -85,7 +85,7 @@ def request_status_distribution():
 
     statuses = query.group_by(Request.status).all()
 
-    # ✅ Force default counts for 'Approve' and 'Reject'
+    # Always return both 'Approve' and 'Reject'
     result_dict = {'Approve': 0, 'Reject': 0}
     for row in statuses:
         result_dict[row.status] = row[1]
