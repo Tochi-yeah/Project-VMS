@@ -1,26 +1,27 @@
 FROM python:3.13-slim
 
-# Install system dependencies including zbar and runtime libraries
+# Install system dependencies including zbar and required libs
 RUN apt-get update && \
-    apt-get install -y libzbar0 libzbar-dev build-essential libglib2.0-0 && \
+    apt-get install -y --no-install-recommends \
+        libzbar0 libzbar-dev build-essential libglib2.0-0 && \
     ldconfig && \
     rm -rf /var/lib/apt/lists/*
 
-# Set working directory (Render expects this)
+# Set working directory (Render uses this path)
 WORKDIR /opt/render/project/src
 
-# Copy application files
+# Copy project files into container
 COPY . .
 
 # Install Python dependencies
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-# Expose application port
+# Make start.sh executable (if you’re using one — optional)
+RUN chmod +x /opt/render/project/src/start.sh || true
+
+# Expose the application port
 EXPOSE 5000
 
-# Make start script executable
-RUN chmod +x /opt/render/project/src/start.sh
-
-# Set start command
-CMD ["/opt/render/project/src/start.sh"]
+# Set the default command to start your app
+CMD ["gunicorn", "--worker-class", "eventlet", "-w", "1", "--bind", "0.0.0.0:5000", "run:app"]
