@@ -23,5 +23,3 @@ RUN chmod +x /opt/render/project/src/start.sh || true
 # Expose the application port
 EXPOSE 5000
 
-# Set the default command to start your app
-CMD ["gunicorn", "--worker-class", "eventlet", "-w", "1", "--bind", "0.0.0.0:5000", "run:app"]
