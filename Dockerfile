@@ -1,30 +1,26 @@
-# Use a lightweight official Python 3.13 image
+# Use an official lightweight Python base image
 FROM python:3.13-slim
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
-
-# Install system dependencies (libzbar0 for pyzbar)
+# Install system dependencies including zbar
 RUN apt-get update && \
-    apt-get install -y libzbar0 && \
+    apt-get install -y libzbar0 build-essential && \
     rm -rf /var/lib/apt/lists/*
 
-# Set work directory
+# Set work directory inside the container
 WORKDIR /app
 
-# Copy project files to the container
-COPY . .
+# Copy project files into container
+COPY . /app
 
 # Install Python dependencies
 RUN pip install --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
-# Run database migrations
+# Run database migrations if needed
 RUN flask db upgrade
 
-# Expose the port your app runs on
-EXPOSE 10000
+# Expose port
+EXPOSE 5000
 
-# Command to run the app
-CMD ["gunicorn", "--worker-class", "eventlet", "-w", "1", "run:app"]
+# Start the app with gunicorn + eventlet
+CMD ["gunicorn", "--worker-class", "eventlet", "-w", "1", "-b", "0.0.0.0:5000", "run:app"]
