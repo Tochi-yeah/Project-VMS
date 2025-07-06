@@ -3,7 +3,7 @@ services:
     name: vms-app
     env: docker
     plan: free
-    dockerfilePath: ./deploy/Dockerfile
+    buildCommand: pip install -r requirements.txt
     dockerCommand: gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:5000 run:app
     envVars:
       - key: SECRET_KEY
@@ -15,3 +15,8 @@ services:
       - key: MAIL_PASSWORD
         sync: false
     autoDeploy: true
+
+build:
+  aptPackages:
+    - libzbar0
+    - libzbar-dev
