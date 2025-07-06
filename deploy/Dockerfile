@@ -7,10 +7,10 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Set working directory
-WORKDIR /app
+WORKDIR /opt/render/project/src
 
-# Copy your application code
-COPY . /app
+# Copy application files
+COPY . .
 
 # Install Python dependencies
 RUN pip install --upgrade pip
