@@ -1,13 +1,9 @@
 services:
   - type: web
     name: vms-app
-    env: python
+    env: docker
     plan: free
-    buildCommand: |
-      pip install -r requirements.txt
-      flask db upgrade
-    startCommand: |
-      python run.py
+    dockerfilePath: ./Dockerfile
     envVars:
       - key: SECRET_KEY
         sync: false
