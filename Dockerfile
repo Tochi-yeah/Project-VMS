@@ -14,8 +14,9 @@ RUN pip install -r requirements.txt
 
 EXPOSE 5000
 
-# Add start script
+# Copy and give execution permission
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
+# Use start.sh as the container's start command
 CMD ["/start.sh"]
