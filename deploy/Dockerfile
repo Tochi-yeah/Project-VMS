@@ -1,21 +1,27 @@
 FROM python:3.13-slim
 
-# Install system dependencies including zbar
+# Install system dependencies including zbar and runtime libraries
 RUN apt-get update && \
     apt-get install -y libzbar0 libzbar-dev build-essential libglib2.0-0 && \
     ldconfig && \
     rm -rf /var/lib/apt/lists/*
 
+# Set working directory
 WORKDIR /app
 
+# Copy your application code
 COPY . /app
 
+# Install Python dependencies
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
+# Expose application port
 EXPOSE 5000
 
-COPY start.sh /start.sh
+# Copy start script and make it executable
+COPY deploy/start.sh /start.sh
 RUN chmod +x /start.sh
 
+# Start using start.sh
 CMD ["/start.sh"]

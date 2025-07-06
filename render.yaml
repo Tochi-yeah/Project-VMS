@@ -3,7 +3,7 @@ services:
     name: vms-app
     env: docker
     plan: free
-    dockerfilePath: ./Dockerfile
+    dockerfilePath: ./deploy/Dockerfile
     envVars:
       - key: SECRET_KEY
         sync: false
