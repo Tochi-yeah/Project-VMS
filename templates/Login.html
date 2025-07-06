@@ -40,11 +40,8 @@
           <a href="{{ url_for('auth.forgot_password') }}" class="forgot-password">Forgot Password?</a>
           {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-              <ul class="flashes">
-                {% for category, message in messages %}
-                  <li class="flash {{ category }}">{{ message }}</li>
-                {% endfor %}
-              </ul>
+              {% set category, message = messages[-1] %}
+                  <div class="flash {{ category }}">{{ message }}</div>
             {% endif %}
           {% endwith %}
       </div>  

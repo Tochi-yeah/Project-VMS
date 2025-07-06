@@ -95,7 +95,7 @@ def update_profile():
         uri = get_totp_uri(user.totp_secret, user.email)
         qr_base64 = generate_qr_code_base64(uri)
         flash("Scan this QR code with your authenticator app.", "info")
-        return render_template("Setting.html", user=user, qr_base64=qr_base64, secret=user.totp_secret)
+        return render_template("Setting.html", user=user, qr_base64=qr_base64, secret=user.totp_secret, active_tab="2fa")
     elif not enable_2fa and user.two_factor_enabled:
         # Disable 2FA
         user.totp_secret = None

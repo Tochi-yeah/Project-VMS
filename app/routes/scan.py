@@ -1,9 +1,9 @@
-# app/routes/scan.py
 from flask import Blueprint, request, jsonify
-from app.models import db, VisitorLog, Request
+from app.models import db, VisitorLog, Request, Visitor  
 from app import csrf
 from app import socketio
 from datetime import datetime
+import uuid
 
 bp = Blueprint('scan', __name__)
 
@@ -18,42 +18,64 @@ def scan_checkin():
     if not unique_code:
         return jsonify({"message": "Invalid or missing QR code data."}), 400
 
-    request_record = Request.query.filter_by(unique_code=unique_code, status="Approve").first()
-    if not request_record:
-        return jsonify({"message": "Invalid or unapproved QR code."}), 404
+    # Try finding visitor first
+    visitor = Visitor.query.filter_by(qr_code=unique_code).first()
 
-    if request_record.code_used:
-        return jsonify({"message": "This QR code has already been used and is no longer valid."}), 403
+    if not visitor:
+        # If no visitor found, check for an approved request with this code
+        req = Request.query.filter_by(unique_code=unique_code, status="Approve").first()
+        if not req:
+            return jsonify({"message": "QR code or unique code not recognized."}), 404
 
-    last_log = VisitorLog.query.filter_by(unique_code=request_record.unique_code).order_by(VisitorLog.timestamp.desc()).first()
-    if last_log and last_log.status == "Checked-In":
-        new_log = VisitorLog(
-            name=request_record.name,
-            email=request_record.email,
-            number=request_record.number,
-            purpose=request_record.purpose,
-            person_to_visit=request_record.person_to_visit,
-            status="Checked-Out",
-            unique_code=request_record.unique_code,
-            timestamp=datetime.utcnow()
+        # Create Visitor record from the approved request
+        visitor = Visitor(
+            name=req.name,
+            email=req.email,
+            number=req.number,
+            qr_code=unique_code,  # Use their approved code as permanent QR
+            last_purpose=req.purpose,
+            last_person_to_visit=req.person_to_visit
         )
-        db.session.add(new_log)
-        request_record.code_used = True
+        db.session.add(visitor)
         db.session.commit()
-        socketio.emit('dashboard_update')  # Add this line
-        return jsonify({"message": f"{request_record.name} has been Checked-Out.\nQR code is now expired."})
-    else:
+
+    # Get latest log for this visitor
+    last_log = VisitorLog.query.filter_by(visitor_id=visitor.id).order_by(VisitorLog.timestamp.desc()).first()
+
+    if not last_log or last_log.status == "Checked-Out":
+        # New Check-In
+        session_id = str(uuid.uuid4())
         new_log = VisitorLog(
-            name=request_record.name,
-            email=request_record.email,
-            number=request_record.number,
-            purpose=request_record.purpose,
-            person_to_visit=request_record.person_to_visit,
+            visitor_id=visitor.id,
+            name=visitor.name,
+            email=visitor.email,
+            number=visitor.number,
+            purpose=visitor.last_purpose,
+            person_to_visit=visitor.last_person_to_visit,
             status="Checked-In",
-            unique_code=request_record.unique_code,
+            unique_code=unique_code,
+            visit_session_id=session_id,
             timestamp=datetime.utcnow()
         )
-        db.session.add(new_log)
-        db.session.commit()
-        socketio.emit('dashboard_update')  # Add this line
-        return jsonify({"message": f"{request_record.name} has been Checked-In."})
+        action = "Checked-In"
+    else:
+        # Check-Out
+        session_id = last_log.visit_session_id
+        new_log = VisitorLog(
+            visitor_id=visitor.id,
+            name=visitor.name,
+            email=visitor.email,
+            number=visitor.number,
+            purpose=visitor.last_purpose,
+            person_to_visit=visitor.last_person_to_visit,
+            status="Checked-Out",
+            unique_code=unique_code,
+            visit_session_id=session_id,
+            timestamp=datetime.utcnow()
+        )
+        action = "Checked-Out"
+
+    db.session.add(new_log)
+    db.session.commit()
+    socketio.emit('dashboard_update')
+    return jsonify({"message": f"{visitor.name} has been {action}."})

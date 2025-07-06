@@ -19,7 +19,7 @@
 
 body {
     font-family: 'Inter', sans-serif;
-    background-image: url('../images/ICC_talangpaz.jpeg'); 
+    background-image: url('../images/ICC_talangpaz.jpeg');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -178,7 +178,7 @@ body {
     transform: translateY(-2px);
 }
 
-.forgot-password {
+.back-to-login {
     display: block;
     font-size: 14px;
     color: var(--primary-color);
@@ -189,49 +189,75 @@ body {
     text-align: center;
 }
 
-.forgot-password:hover {
+.back-to-login:hover {
     color: var(--primary-dark);
     text-decoration: underline;
 }
 
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--text-primary);
+    transition: var(--transition);
+    background: var(--secondary-color);
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.other-purpose-group {
+  display: none;
+}
+
+.other-purpose-group.show {
+  display: block;
+}
+
 .flashes {
-  list-style-type: none;
-  padding: 0;
-  margin: 20px 0;
+    list-style-type: none;
+    padding: 0;
+    margin: 20px 0;
 }
 
 .flash {
-  padding: 12px 20px;
-  margin-top: 10px;
-  border-radius: 8px;
-  font-weight: 500;
-  font-size: 14px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  color: #fff;
-  animation: fadeIn 0.5s ease;
+    padding: 12px 20px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 14px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    color: #fff;
+    animation: fadeIn 0.5s ease;
 }
 
 .flash.success {
-  background-color: #27ae60;
+    background-color: #27ae60;
 }
 
 .flash.danger {
-  background-color: #e74c3c;
+    background-color: #e74c3c;
 }
 
 .flash.info {
-  background-color: #3498db;
+    background-color: #3498db;
 }
 
 .flash.warning {
-  background-color: #f39c12;
+    background-color: #f39c12;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-5px); }
-  to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
 }
-
 
 @keyframes fadeInUp {
     from {
@@ -246,6 +272,37 @@ body {
 
 .container {
     animation: fadeInUp 0.5s ease-out;
+}
+
+.qr-upload {
+    margin-bottom: 16px;
+}
+
+.qr-upload label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.qr-upload input[type="file"] {
+    width: 100%;
+    padding: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--text-primary);
+    background: var(--secondary-color);
+    transition: var(--transition);
+}
+
+.qr-upload input[type="file"]:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 @media (max-width: 1024px) {

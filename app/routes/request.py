@@ -1,6 +1,6 @@
 # app/routes/request.py
 from flask import Blueprint, render_template, request, redirect, url_for, flash
-from app.models import db, Request
+from app.models import db, Request, Visitor
 from app.utils.helpers import generate_unique_secure_code
 from app.mailer import send_visitor_qr_email
 from app.utils.helpers import login_required
@@ -20,7 +20,7 @@ def request_page():
     requests = pagination.items
     return render_template("Request.html", requests=requests, pagination=pagination, per_page=per_page)
 
-@bp.route("/Visitor-register")
+@bp.route("/Visitor-register-form")
 def online_reg():
     return render_template("Visitor-register.html")
 
@@ -80,22 +80,56 @@ def update_status(request_id):
     req = Request.query.get_or_404(request_id)
     new_status = request.form.get("status")
 
-    if new_status in ["Approve", "Reject"]:
-        req.status = new_status
-        db.session.commit()
-        socketio.emit('dashboard_update')  # <-- ADD THIS LINE
-        socketio.emit('request_update')  # <-- ADD THIS LINE  
-        flash(f"Request has been {new_status.lower()}ed.", "success")
+    if new_status not in ["Approve", "Reject"]:
+        flash("Invalid status value.", "error")
+        return redirect(url_for('request_bp.request_page'))
 
-        if new_status == "Approve" and all([req.name, req.email, req.number, req.purpose, req.person_to_visit]):
+    req.status = new_status
+    db.session.commit()
+    socketio.emit('dashboard_update')
+    socketio.emit('request_update')
+    flash(f"Request has been {new_status.lower()}ed.", "success")
+
+    if new_status == "Approve" and all([req.name, req.email, req.number, req.purpose, req.person_to_visit]):
+        visitor = Visitor.query.filter_by(email=req.email).first()
+
+        if not visitor:
+            # First-time visitor — create new permanent visitor record
+            permanent_qr = generate_unique_secure_code()
+            visitor = Visitor(
+                name=req.name,
+                email=req.email,
+                number=req.number,
+                qr_code=permanent_qr,
+                last_purpose=req.purpose,
+                last_person_to_visit=req.person_to_visit
+            )
+            db.session.add(visitor)
+            db.session.commit()
+
+            # Update request unique_code to use new permanent QR
+            req.unique_code = permanent_qr
+            db.session.commit()
+
             try:
                 send_visitor_qr_email(req)
                 flash("QR code generated and sent via email.", "success")
             except Exception as e:
                 flash(f"Failed to send email: {str(e)}", "danger")
+
         else:
-            flash("Incomplete request data. Cannot log visitor.", "warning")
-    else:
-        flash("Invalid status value.", "error")
+            # Existing visitor — update their visit details from request
+            visitor.last_purpose = req.purpose
+            visitor.last_person_to_visit = req.person_to_visit
+            db.session.commit()
+
+            # Update request unique_code to reuse their permanent QR
+            req.unique_code = visitor.qr_code
+            db.session.commit()
+
+            flash("Visitor's details updated and QR code reused.", "success")
+
+    elif new_status == "Approve":
+        flash("Incomplete request data. Cannot approve visitor.", "warning")
 
     return redirect(url_for('request_bp.request_page'))

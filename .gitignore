@@ -16,7 +16,6 @@ venv/
 
 # Render build artifacts (optional)
 instance/
-static/profile_pics/
 static/qrcodes/
 
 # WeasyPrint temp files
@@ -29,4 +28,10 @@ static/qrcodes/
 .DS_Store
 Thumbs.db
 
+# Python Files  
 debug_run.py
+
+# HTML files
+
+
+# CSS files

@@ -6,6 +6,18 @@ import pytz
 from sqlalchemy.dialects.postgresql import TIMESTAMP
 
 
+class Visitor(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    number = db.Column(db.String(20), nullable=False)
+    qr_code = db.Column(db.String(200), unique=True, nullable=False)
+    last_purpose = db.Column(db.String(200))
+    last_person_to_visit = db.Column(db.String(100))
+
+    def __repr__(self):
+        return f'<Visitor {self.name}>'    
+
 # Pending requests table
 class Request(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -25,6 +37,7 @@ class Request(db.Model):
 # Logs table (after request is approved)
 class VisitorLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    visitor_id = db.Column(db.Integer, db.ForeignKey('visitor.id'))  # link to visitor
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), nullable=False)
     number = db.Column(db.String(20), nullable=False)
@@ -33,6 +46,7 @@ class VisitorLog(db.Model):
     status = db.Column(db.String(20), nullable=False)  # 'Checked-In' or 'Checked-Out'
     timestamp = db.Column(TIMESTAMP(timezone=True), nullable=False)
     unique_code = db.Column(db.String(10))
+    visit_session_id = db.Column(db.String(50), nullable=True)
 
     def __repr__(self):
         return f'<VisitorLog {self.name} - {self.status}>'

@@ -50,6 +50,18 @@ def create_app():
     app.config['MAIL_DEFAULT_SENDER'] = 'afablejrchito@gmail.com'
     app.config['RATELIMIT_STORAGE_URI'] = os.getenv("REDIS_URL", "memory://")
     app.config['MAIL_DEBUG'] = True
+    
+    # Connection Pool Management for Render/Eventlet/Psycopg2
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        "pool_size": 10,
+        "max_overflow": 5,
+        "pool_timeout": 30,
+        "pool_recycle": 1800  # recycle connections_
+    }
+
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'pool_pre_ping': True
+    }
 
     if not app.config['MAIL_USERNAME'] or not app.config['MAIL_PASSWORD']:
         raise RuntimeError("Missing mail credentials in .env")
@@ -78,5 +90,9 @@ def create_app():
     # Register Jinja filters
     from app.utils.helpers import convert_to_ph_time_only
     app.jinja_env.filters['ph_time_only'] = convert_to_ph_time_only
+
+    @app.teardown_appcontext
+    def shutdown_session(exception=None):
+        db.session.remove()
 
     return app

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registered - VMS</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/Already-registered.css') }}">
+</head>
+<body>
+  <div class="container">
+    <div class="left">
+      <img src="{{ url_for('static', filename='images/icc-balayan.jpg') }}" class="logo" alt="Logo">
+      <h1>Welcome to VMS!</h1>
+      <p>Enter your visit details to proceed</p>
+    </div>
+
+    <div class="right">
+      <h2 class="form-title">Already Registered?</h2>
+      <p class="form-subtitle">Upload your QR code that was sent in your email and enter purpose and person to visit.</p>
+
+      <form action="{{ url_for('main.revisit') }}" method="POST" enctype="multipart/form-data">
+      
+        <div class="qr-upload">
+          <label for="qr-upload">Upload QR Code</label>
+          <input type="file" id="qr-upload" name="qr_upload" accept="image/*" required>
+        </div>
+
+          <div class="form-group">
+              <label for="purpose">Purpose of Visit</label>
+              <select id="purpose" name="purpose" required>
+                  <option value="" disabled selected>Select Purpose</option>
+                  <option value="Meeting">Meeting</option>
+                  <option value="Campus Tour">Campus Tour</option>
+                  <option value="Event">Event</option>
+                  <option value="Other">Other</option>
+              </select>
+              <div class="other-purpose-group" id="other-purpose">
+                  <label for="other_purpose">Specify Other Purpose</label>
+                  <input type="text" id="other_purpose" name="other_purpose">
+              </div>
+          </div>
+
+        <div class="form-group">
+          <label for="person">Person to Visit (Optional)</label>
+          <input type="text" id="person" name="person" placeholder="Put None if no person to visit">
+        </div>
+
+        <button type="submit" class="submit-btn">Submit</button>
+      </form> 
+
+      <a href="{{ url_for('request_bp.online_reg') }}" class="back-to-login">Back to Register</a>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <ul class="flashes">
+            {% for category, message in messages %}
+              <li class="flash {{ category }}">{{ message }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      {% endwith %}
+    </div>
+  </div>
+
+  <script>
+        const purposeSelect = document.getElementById('purpose');
+        const otherPurposeDiv = document.getElementById('other-purpose');
+        const otherPurposeInput = document.getElementById('other_purpose');
+
+        purposeSelect.addEventListener('change', function() {
+            if (this.value === 'Other') {
+                otherPurposeDiv.classList.add('show');
+                otherPurposeInput.setAttribute('required', 'required');
+            } else {
+                otherPurposeDiv.classList.remove('show');
+                otherPurposeInput.removeAttribute('required');
+                otherPurposeInput.value = '';
+            }
+        });
+    </script>
+    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'94fa23d1890e5de4',t:'MTc0OTkwNzM4Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+</body>
+</html>
