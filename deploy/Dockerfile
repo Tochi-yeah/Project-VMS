@@ -6,7 +6,7 @@ RUN apt-get update && \
     ldconfig && \
     rm -rf /var/lib/apt/lists/*
 
-# Set working directory
+# Set working directory (Render expects this)
 WORKDIR /opt/render/project/src
 
 # Copy application files
@@ -19,9 +19,8 @@ RUN pip install -r requirements.txt
 # Expose application port
 EXPOSE 5000
 
-# Copy start script and make it executable
-COPY deploy/start.sh /start.sh
-RUN chmod +x /start.sh
+# Make start script executable
+RUN chmod +x /opt/render/project/src/start.sh
 
-# Start using start.sh
-CMD ["/start.sh"]
+# Set start command
+CMD ["/opt/render/project/src/start.sh"]
