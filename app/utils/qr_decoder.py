@@ -1,9 +1,9 @@
-from pyzbar.pyzbar import decode
-from PIL import Image
+import cv2
 
 def decode_qr(file_path):
-    img = Image.open(file_path)
-    decoded_objects = decode(img)
-    if decoded_objects:
-        return decoded_objects[0].data.decode("utf-8")
+    img = cv2.imread(file_path)
+    detector = cv2.QRCodeDetector()
+    data, points, _ = detector.detectAndDecode(img)
+    if data:
+        return data
     return None
