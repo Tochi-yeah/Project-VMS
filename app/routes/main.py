@@ -95,19 +95,6 @@ def logs():
     manila_tz = pytz.timezone("Asia/Manila")
     now_manila = get_current_time()
 
-    # if no filter date provided — default to today
-    if not filter_date:
-        filter_date_obj = now_manila.date()
-    else:
-        try:
-            filter_date_obj = datetime.strptime(filter_date, "%Y-%m-%d").date()
-        except ValueError:
-            flash("Invalid date format.", "danger")
-            return render_template("Logs.html", logs=[], filter_date=filter_date, search_query=search_query, pagination=None, per_page=per_page)
-
-    start_of_day = manila_tz.localize(datetime.combine(filter_date_obj, datetime.min.time())).astimezone(pytz.utc)
-    end_of_day = start_of_day + timedelta(days=1)
-
     base_query = db.session.query(
         VisitorLog.visit_session_id,
         VisitorLog.visitor_id,
@@ -133,12 +120,29 @@ def logs():
         VisitorLog.purpose,
         VisitorLog.person_to_visit,
         VisitorLog.unique_code
-    ).having(
-        func.max(VisitorLog.timestamp).between(start_of_day, end_of_day)
     )
 
+    # Apply search query filter if present
     if search_query:
         base_query = base_query.filter(VisitorLog.name.ilike(f"%{search_query}%"))
+
+    # Apply date filter
+    if filter_date:
+        try:
+            filter_date_obj = datetime.strptime(filter_date, "%Y-%m-%d").date()
+            base_query = base_query.having(
+                func.date(func.timezone('Asia/Manila', func.max(VisitorLog.timestamp))) == filter_date_obj
+            )
+        except ValueError:
+            flash("Invalid date format.", "danger")
+            return render_template("Logs.html", logs=[], filter_date=filter_date, search_query=search_query, pagination=None, per_page=per_page)
+    else:
+        # If no search query either — default to today’s date
+        if not search_query:
+            today_date = now_manila.date()
+            base_query = base_query.having(
+                func.date(func.timezone('Asia/Manila', func.max(VisitorLog.timestamp))) == today_date
+            )
 
     base_query = base_query.order_by(func.max(VisitorLog.timestamp).desc())
 
@@ -148,11 +152,12 @@ def logs():
     return render_template(
         "Logs.html",
         logs=logs,
-        filter_date=filter_date_obj.strftime('%Y-%m-%d'),
+        filter_date=filter_date,
         search_query=search_query,
         pagination=pagination,
         per_page=per_page
     )
+
 
 
 @bp.route("/analytic")
