@@ -1,5 +1,6 @@
 from flask import Blueprint, request, flash, redirect, session, url_for, current_app, render_template
 from app.models import db, User
+from flask_login import current_user
 from werkzeug.security import generate_password_hash
 from werkzeug.utils import secure_filename
 from app.utils.totp import generate_totp_secret, get_totp_uri, generate_qr_code_base64
@@ -16,7 +17,7 @@ def allowed_file(filename):
 @bp.route("/create-account", methods=["POST"])
 @csrf.exempt
 def create_account():
-    if 'role' not in session or session['role'] != 'admin':
+    if not current_user.is_authenticated or current_user.role != 'admin':
         flash("Unauthorized access.", "danger")
         return redirect(url_for('main.setting'))
 
@@ -25,6 +26,7 @@ def create_account():
     password = request.form.get("new_password", "")
     confirm_password = request.form.get("confirm_password", "")
     role = request.form.get("role", "user")
+    gate_role = request.form.get("gate_role", "").strip()  # ✅ added
 
     # Basic validation
     if not username or not email or not password or not confirm_password:
@@ -48,7 +50,8 @@ def create_account():
         username=username,
         email=email,
         password_hash=generate_password_hash(password),
-        role=role
+        role=role,
+        gate_role=gate_role if gate_role else None   # ✅ save gate role
     )
     db.session.add(new_user)
     db.session.commit()
@@ -58,11 +61,11 @@ def create_account():
 @bp.route("/update-profile", methods=["POST"])
 @csrf.exempt
 def update_profile():
-    if 'user_id' not in session:
+    if not current_user.is_authenticated:
         flash("You must be logged in to update your profile.", "danger")
         return redirect(url_for('auth.login'))
 
-    user = User.query.get(session['user_id'])
+    user = current_user
     if not user:
         flash("User not found.", "danger")
         return redirect(url_for('main.setting'))
@@ -71,6 +74,7 @@ def update_profile():
     new_email = request.form.get("email", "").strip()
     new_password = request.form.get("password", "")
     confirm_password = request.form.get("confirm_password", "")
+    new_gate_role = request.form.get("gate_role", "").strip()  # ✅ new
 
     # Check for duplicate email or username (if changed)
     if new_email != user.email and User.query.filter_by(email=new_email).first():
@@ -85,19 +89,27 @@ def update_profile():
         flash("Passwords do not match.", "danger")
         return redirect(url_for('main.setting'))
 
+    # ✅ Update gate role if provided
+    if new_gate_role:
+        user.gate_role = new_gate_role
+
+    # Handle 2FA toggle
     enable_2fa = request.form.get("two-factor") == "on"
     if enable_2fa and not user.two_factor_enabled:
-        # Enable 2FA: generate secret and show QR
         user.totp_secret = generate_totp_secret()
         user.two_factor_enabled = True
         db.session.commit()
-        # Show QR code for setup
         uri = get_totp_uri(user.totp_secret, user.email)
         qr_base64 = generate_qr_code_base64(uri)
         flash("Scan this QR code with your authenticator app.", "info")
-        return render_template("Setting.html", user=user, qr_base64=qr_base64, secret=user.totp_secret, active_tab="2fa")
+        return render_template(
+            "Setting.html",
+            user=user,
+            qr_base64=qr_base64,
+            secret=user.totp_secret,
+            active_tab="2fa"
+        )
     elif not enable_2fa and user.two_factor_enabled:
-        # Disable 2FA
         user.totp_secret = None
         user.two_factor_enabled = False
         db.session.commit()
@@ -107,7 +119,6 @@ def update_profile():
     file = request.files.get('profile_picture')
     if file and file.filename:
         filename = secure_filename(file.filename)
-        # Use the actual static folder (project root/static/profile_pics)
         static_folder = os.path.abspath(os.path.join(current_app.root_path, '..', 'static', 'profile_pics'))
         os.makedirs(static_folder, exist_ok=True)
         file_path = os.path.join(static_folder, filename)
@@ -115,6 +126,7 @@ def update_profile():
         user.profile_picture = filename
         print("Profile picture uploaded successfully:", filename)
 
+    # Update other profile details
     user.username = new_username
     user.email = new_email
     if new_password:

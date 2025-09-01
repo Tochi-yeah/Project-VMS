@@ -30,6 +30,23 @@
 
     <!-- Request Content -->
     <main class="request-content">
+
+      <!-- CSV Upload Section -->
+    <div class="csv-upload-section animate-in">
+      <form method="POST" enctype="multipart/form-data" action="{{ url_for('request_bp.upload_csv') }}">
+        <label for="csv-file" class="btn btn-secondary">
+          <i class="fas fa-file-excel"></i> Upload
+        </label>
+        <input type="file" id="csv-file" name="file" accept=".csv,.xlsx" style="display:none;" onchange="this.form.submit()">
+      </form>
+
+      <a href="{{ url_for('download_template.download_bulk_template') }}" class="table-action-btn">
+        <i class="fas fa-file-excel"></i> Download Format
+      </a>
+
+      <p class="hint">Upload visitor requests in bulk using a CSV or XLSX file and downloadable format for easy editing.</p>
+    </div>
+
       <!-- Request Table Section -->
       <div class="table-section animate-in">
         <div class="table-header">
@@ -63,27 +80,76 @@
               </tr>
             </thead>
             <tbody>
-              {% if requests %}
-                {% for request in requests %}
-                <tr class="animate-in">
-                  <td>{{ (pagination.page - 1) * pagination.per_page + loop.index }}</td>
-                  <td>{{ request.name }}</td>
-                  <td>{{ request.email }}</td>
-                  <td>{{ request.number }}</td>
-                  <td>{{ request.purpose }}</td>
-                  <td>{{ request.person_to_visit }}</td>
-                  <td><code style="background: var(--secondary-color); padding: 4px 8px; border-radius: 4px; font-size: 12px;">{{ request.unique_code }}</code></td>
-                  <td>
-                    <form method="POST" action="{{ url_for('request_bp.update_status', request_id=request.id) }}">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                      <select name="status" class="selection-process" onchange="this.form.submit()">
-                        <option value="" disabled {% if not request.status or request.status == 'Pending' %}selected{% endif %}>Select</option>
-                        <option value="Approve" {% if request.status == 'Approve' %}selected{% endif %}>Approve</option>
-                        <option value="Reject" {% if request.status == 'Reject' %}selected{% endif %}>Reject</option>
-                      </select>
-                    </form>
-                  </td>
-                </tr>
+              {% if groups %}
+                {% for group_code, group_requests in groups.items() %}
+                  {% if group_requests|length > 1 %}
+                    <!-- Group parent row -->
+                    <tr class="group-row animate-in" data-group="{{ group_code }}">
+                      <td>{{ loop.index }}</td>
+                      <td colspan="5"><strong>Group Request</strong></td>
+                      <td>
+                        <code style="background: var(--secondary-color); padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                          {{ group_code }}
+                        </code>
+                      </td>
+                      <td>
+                        <!-- ONE Approve/Reject for whole group -->
+                        <form method="POST" action="{{ url_for('request_bp.update_status', request_id=group_requests[0].id) }}">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                          <select name="status" class="selection-process" onchange="this.form.submit()">
+                            <option value="" disabled selected>Select</option>
+                            <option value="Approve">Approve</option>
+                            <option value="Reject">Reject</option>
+                          </select>
+                        </form>
+                      </td>
+                    </tr>
+
+                    <!-- Child rows -->
+                    {% for request in group_requests %}
+                      <tr class="child-row hidden animate-in" data-group="{{ group_code }}">
+                        <td></td>
+                        <td>{{ request.name }}</td>
+                        <td>{{ request.email }}</td>
+                        <td>{{ request.number }}</td>
+                        <td>{{ request.purpose }}</td>
+                        <td>{{ request.person_to_visit }}</td>
+                        <td>
+                          <code style="background: var(--secondary-color); padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                            {{ request.unique_code }}
+                          </code>
+                        </td>
+                        <td></td>
+                      </tr>
+                    {% endfor %}
+
+                  {% else %}
+                    <!-- Single Request Row -->
+                    {% set request = group_requests[0] %}
+                    <tr class="animate-in">
+                      <td>{{ loop.index }}</td>
+                      <td>{{ request.name }}</td>
+                      <td>{{ request.email }}</td>
+                      <td>{{ request.number }}</td>
+                      <td>{{ request.purpose }}</td>
+                      <td>{{ request.person_to_visit }}</td>
+                      <td>
+                        <code style="background: var(--secondary-color); padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                          {{ request.unique_code }}
+                        </code>
+                      </td>
+                      <td>
+                        <form method="POST" action="{{ url_for('request_bp.update_status', request_id=request.id) }}">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                          <select name="status" class="selection-process" onchange="this.form.submit()">
+                            <option value="" disabled {% if not request.status or request.status == 'Pending' %}selected{% endif %}>Select</option>
+                            <option value="Approve" {% if request.status == 'Approve' %}selected{% endif %}>Approve</option>
+                            <option value="Reject" {% if request.status == 'Reject' %}selected{% endif %}>Reject</option>
+                          </select>
+                        </form>
+                      </td>
+                    </tr>
+                  {% endif %}
                 {% endfor %}
               {% else %}
                 <tr>
@@ -168,6 +234,16 @@
       location.reload();
     });
   </script>
+
+<script>
+  document.querySelectorAll('.group-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const group = row.dataset.group;
+      document.querySelectorAll(`.child-row[data-group="${group}"]`)
+        .forEach(child => child.classList.toggle('hidden'));
+    });
+  });
+</script>
 
   {% endblock %}
   </body>

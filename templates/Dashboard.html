@@ -10,7 +10,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  
 
 </head>
 <body>
@@ -79,6 +78,7 @@
                 <th>Name</th>
                 <th>Purpose</th>
                 <th>Visiting</th>
+                <th>Approved By</th>
                 <th>Check-In</th>
                 <th>Check-Out</th>
                 <th>Date</th>
@@ -91,12 +91,40 @@
                 <td>{{ log.name }}</td>
                 <td>{{ log.purpose }}</td>
                 <td>{{ log.person_to_visit }}</td>
+                <td>{{ log.admin_username or '—' }}</td>
+                
+                <!-- ✅ Check-In with Tooltip -->
                 <td>
-                  <span class="status-badge status-in">{{ log.check_in_time | ph_time_only if log.check_in_time else '—' }}</span>
+                  {% if log.check_in_time %}
+                    <span class="status-badge status-in tooltip">
+                      {{ log.check_in_time | ph_time_only }}
+                      <i class="fas fa-info-circle info-icon"></i>
+                      <span class="tooltiptext">
+                        <strong>Entry:</strong> {{ log.gate_in or '—' }}<br>
+                        <strong>Scanned By:</strong> {{ log.checked_in_by or '—' }}
+                      </span>
+                    </span>
+                  {% else %}
+                    —
+                  {% endif %}
                 </td>
+
+                <!-- ✅ Check-Out with Tooltip -->
                 <td>
-                  <span class="status-badge status-out">{{ log.check_out_time | ph_time_only if log.check_out_time else '—' }}</span>
+                  {% if log.check_out_time %}
+                    <span class="status-badge status-out tooltip">
+                      {{ log.check_out_time | ph_time_only }}
+                      <i class="fas fa-info-circle info-icon"></i>
+                      <span class="tooltiptext">
+                        <b>Exit:</b> {{ log.gate_out or '—' }}<br>
+                        <b>Scanned By:</b> {{ log.checked_out_by or '—' }}
+                      </span>
+                    </span>
+                  {% else %}
+                    —
+                  {% endif %}
                 </td>
+                
                 <td>
                   {% if log.visit_date %}
                     {{ log.visit_date.strftime('%B %d, %Y') }}
@@ -108,7 +136,7 @@
               {% endfor %}
             {% else %}
               <tr>
-                <td colspan="6">
+                <td colspan="7">
                   <div class="empty-state">
                     <i class="fas fa-users"></i>
                     <h3>No visitors yet</h3>
@@ -120,6 +148,7 @@
           </tbody>
         </table>
       </div>
+
     </main>
   </div>
 
@@ -128,12 +157,8 @@
   const socket = io();
 
   socket.on('dashboard_update', function() {
-    // Option 1: Reload the page (simple)
     console.log('Received dashboard_update event');
     location.reload();
-
-    // Option 2: Use AJAX to fetch and update only the stats/table (advanced)
-    
   });
 </script>
 

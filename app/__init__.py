@@ -8,6 +8,7 @@ from flask_wtf import CSRFProtect
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_socketio import SocketIO
+from flask_login import LoginManager
 import os
 
 load_dotenv()  # Load environment variables from .env file
@@ -19,6 +20,8 @@ migrate = Migrate()
 csrf = CSRFProtect()
 socketio = SocketIO(cors_allowed_origins="*")  # Add this line
 limiter = Limiter(key_func=get_remote_address)  # make global instance
+login_manager = LoginManager()
+login_manager.login_view = "auth.login"  # the name of your login route
 
 def create_app():
     app = Flask(
@@ -26,17 +29,6 @@ def create_app():
         template_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'templates'),
          static_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'static')
     )
-
-    
-    @app.context_processor
-    def inject_user():
-        from flask import session
-        from app.models import User
-        user = None
-        if 'user_id' in session:
-            user = User.query.get(session['user_id'])
-        return dict(user=user)
-
     
     # Configuration
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
@@ -73,12 +65,13 @@ def create_app():
     csrf.init_app(app)
     socketio.init_app(app)
     limiter.init_app(app)
+    login_manager.init_app(app)
 
     # Set default rate limits
     limiter.default_limits = ["100 per day", "20 per hour"]
 
     # Register Blueprints
-    from app.routes import main, auth, request, scan, download_log, analytic, profile
+    from app.routes import main, auth, request, scan, download_log, analytic, profile, download_template
     app.register_blueprint(main.bp)
     app.register_blueprint(auth.bp)
     app.register_blueprint(request.bp)
@@ -86,6 +79,9 @@ def create_app():
     app.register_blueprint(download_log.bp)
     app.register_blueprint(analytic.bp)
     app.register_blueprint(profile.bp)
+    app.register_blueprint(download_template.bp) # ✅ Register the new blueprint
+
+    from app.models import User
 
     # Register Jinja filters
     from app.utils.helpers import convert_to_ph_time_only

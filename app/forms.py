@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField
-from wtforms.validators import DataRequired, Email, Length, Regexp, EqualTo
-from wtforms import BooleanField
+from wtforms import StringField, PasswordField, SubmitField, BooleanField
+from wtforms.validators import DataRequired, Email, Length, Regexp, EqualTo, ValidationError
+from app.models import User
 
 
 class ForgotPasswordForm(FlaskForm):
@@ -23,5 +23,18 @@ class ResetPasswordForm(FlaskForm):
 class LoginForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
-    remember_me = BooleanField('Remember Me')
+    remember_me = BooleanField('Remember Me') # Changed from remember-me
     submit = SubmitField('Log in')
+
+    # This custom validator checks if the email exists in the database.
+    def validate_email(self, email):
+        user = User.query.filter_by(email=email.data).first()
+        if not user:
+            raise ValidationError('The email you entered is not registered.')
+
+    # This custom validator checks if the password is correct for the email.
+    def validate_password(self, password):
+        user = User.query.filter_by(email=self.email.data).first()
+        # We only check the password if the user exists
+        if user and not user.check_password(password.data):
+            raise ValidationError('Incorrect password. Please try again.')

@@ -6,16 +6,6 @@ from flask import session, redirect, url_for, flash
 from datetime import datetime
 import pytz
 
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        print("Session user_id:", session.get('user_id'))
-        if 'user_id' not in session:
-            flash("Please log in to access this page.", "warning")
-            return redirect(url_for("auth.login"))
-        return f(*args, **kwargs)
-    return decorated_function
-
 def generate_unique_secure_code(length=8):
     characters = string.ascii_uppercase + string.digits
     while True:

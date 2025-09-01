@@ -1,17 +1,15 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/user_menu.css') }}">
 
-
-
 <div class="header-user-section">
   <div class="welcome-message">
     <span class="welcome-text">Welcome back,</span>
     <span class="welcome-name">
-      {{ user.username }}
+      {{ current_user.username }}
     </span>
   </div>
   <div class="user-menu">
-    {% if user and user.profile_picture %}
-      <img src="{{ url_for('static', filename='profile_pics/' ~ user.profile_picture) }}" alt="Profile" class="user-avatar" onclick="toggleDropdown()">
+    {% if current_user and current_user.profile_picture %}
+      <img src="{{ url_for('static', filename='profile_pics/' ~ current_user.profile_picture) }}" alt="Profile" class="user-avatar" onclick="toggleDropdown()">
     {% else %}
       <img src="{{ url_for('static', filename='images/icc-balayan.jpg') }}" alt="Profile" class="user-avatar" onclick="toggleDropdown()">
     {% endif %}

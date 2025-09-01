@@ -16,32 +16,43 @@
       <div class="right">
           <h2 class="form-title">Login</h2>
           <p class="form-subtitle">Enter your credentials to access the VMS</p>
+          
           <form method="POST" action="{{ url_for('auth.login') }}">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <div class="form-group">
-                 <label for="email">Login</label>
-                  <input type="email" id="email" name="email" placeholder="Email" required>
+              {{ form.hidden_tag() }} <div class="form-group">
+                  {{ form.email.label }}
+                  {{ form.email(placeholder="Email", required=true) }}
+                  {% for error in form.email.errors %}
+                      <div class="flash danger">{{ error }}</div>
+                  {% endfor %}
               </div>
               
               <div class="form-group">
-                 <label for="password">Password</label>
-                  <input type="password" id="password" name="password" placeholder="Password" required>
+                  {{ form.password.label }}
+                  {{ form.password(placeholder="Password", required=true) }}
+                  {% for error in form.password.errors %}
+                      <div class="flash danger">{{ error }}</div>
+                  {% endfor %}
               </div>
               
-              <div class="form-group">
-                    <label for="remember-me" class="remember-me-label">
-                        <input type="checkbox" id="remember-me" name="remember-me">
+              <div class="form-group remember-me-group">
+                    <label for="{{ form.remember_me.id }}" class="remember-me-label">
+                        {{ form.remember_me() }}
                         Remember Me
                     </label>
               </div>
 
-              <button type="submit" class="submit-btn">Log in</button>
+              {{ form.submit(class="submit-btn") }}
           </form>
+
           <a href="{{ url_for('auth.forgot_password') }}" class="forgot-password">Forgot Password?</a>
+          
           {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-              {% set category, message = messages[-1] %}
-                  <div class="flash {{ category }}">{{ message }}</div>
+              <ul class="flashes">
+                {% for category, message in messages %}
+                  <li class="flash {{ category }}">{{ message }}</li>
+                {% endfor %}
+              </ul>
             {% endif %}
           {% endwith %}
       </div>  

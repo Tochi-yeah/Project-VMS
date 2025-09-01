@@ -56,8 +56,8 @@
       <div class="table-header">
         <h2 class="table-title">Visitor Logs</h2>
         <div class="table-actions">
-          <a href="{{ url_for('download_log.export_logs_pdf', filter_date=filter_date, search_query=search_query) }}" class="table-action-btn" target="_blank">
-            <i class="fas fa-file-pdf"></i> Export Data
+          <a href="{{ url_for('download_log.export_logs_excel', filter_date=filter_date, search_query=search_query) }}" class="table-action-btn">
+            <i class="fas fa-file-excel"></i> Export Data
           </a>
         </div>
       </div>
@@ -70,6 +70,7 @@
             <th>Number</th>
             <th>Purpose</th>
             <th>Person to Visit</th>
+            <th>Approved By</th>
             <th>Check-In</th>
             <th>Check-Out</th>
             <th>Code</th>
@@ -77,34 +78,52 @@
           </tr>
         </thead>
         <tbody>
-          {% if logs %}
-            {% for log in logs %}
+          {% for log in logs %}
             <tr>
-              <td>{{ (pagination.page - 1) * pagination.per_page + loop.index }}</td>
+              <td>{{ loop.index + pagination.per_page * (pagination.page - 1) }}</td>
               <td>{{ log.name }}</td>
               <td>{{ log.email }}</td>
               <td>{{ log.number }}</td>
               <td>{{ log.purpose }}</td>
               <td>{{ log.person_to_visit }}</td>
+              <td>{{ log.approved_by or '—' }}</td> <!-- ✅ Display Approver's Name -->
+
+              <!-- ✅ Check-In with your requested tooltip design -->
               <td>
-                <span class="status-badge status-in">{{ log.check_in_time | ph_time_only if log.check_in_time else '—' }}</span>
-              </td>
-              <td>
-                <span class="status-badge status-out">{{ log.check_out_time | ph_time_only if log.check_out_time else '—' }}</span>
-              </td>
-              <td>{{ log.unique_code }}</td>
-               <td>
-                {% if log.visit_date %}
-                  {{ log.visit_date.strftime('%B %d, %Y') }}
+                {% if log.check_in_time %}
+                  <span class="status-badge status-in tooltip">
+                    {{ log.check_in_time | ph_time_only }}
+                    <i class="fas fa-info-circle info-icon"></i>
+                    <span class="tooltiptext">
+                      <strong>Entry:</strong> {{ log.gate_in or '—' }}<br>
+                      <strong>Scanned By:</strong> {{ log.checked_in_by or '—' }}
+                    </span>
+                  </span>
                 {% else %}
                   —
                 {% endif %}
               </td>
+              <!-- ✅ Check-Out with your requested tooltip design -->
+              <td>
+                {% if log.check_out_time %}
+                  <span class="status-badge status-out tooltip">
+                    {{ log.check_out_time | ph_time_only }}
+                    <i class="fas fa-info-circle info-icon"></i>
+                    <span class="tooltiptext">
+                      <b>Exit:</b> {{ log.gate_out or '—' }}<br>
+                      <b>Scanned By:</b> {{ log.checked_out_by or '—' }}
+                    </span>
+                  </span>
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td>{{ log.unique_code }}</td>
+              <td>{{ log.visit_date.strftime('%B %d, %Y') if log.visit_date else '—' }}</td>
             </tr>
-            {% endfor %}
           {% else %}
             <tr>
-              <td colspan="10">
+              <td colspan="11">
                 <div class="empty-state">
                   <i class="fas fa-users"></i>
                   <h3>No logs yet</h3>
@@ -112,7 +131,7 @@
                 </div>
               </td>
             </tr>
-          {% endif %}
+          {% endfor %}
         </tbody>
       </table>
       {% if pagination and pagination.pages > 1 %}
@@ -163,3 +182,4 @@
 {% endblock %}
 </body>
 </html>
+

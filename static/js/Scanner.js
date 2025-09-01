@@ -19,6 +19,7 @@ codeForm.addEventListener("submit", (e) => {
   fetch("/scan-checkin", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "same-origin", 
     body: JSON.stringify({ qr_data: code })
   })
   .then(res => res.json())

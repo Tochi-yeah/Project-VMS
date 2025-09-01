@@ -33,7 +33,7 @@
               Profile
             </a>
           </li>
-          {% if user.two_factor_enabled and qr_base64 and secret %}
+          {% if current_user.two_factor_enabled and qr_base64 and secret %}
           <li>
             <a href="#" class="tab-link" data-tab="2fa-setup">
               <i class="fas fa-qrcode"></i>
@@ -41,7 +41,7 @@
             </a>
           </li>
           {% endif %}
-          {% if session['role'] == 'admin' %}
+          {% if current_user.role == 'admin' %}
           <li>
             <a href="#" class="tab-link" data-tab="create-account">
               <i class="fas fa-user-plus"></i>
@@ -53,7 +53,6 @@
       </nav>
 
       <div class="settings-container">
-        <!-- Profile Section -->
         <div class="settings-section active" id="profile-section">
           <div class="settings-card animate-in">
             <div class="card-header">
@@ -68,8 +67,8 @@
               <div class="profile-header">
                 <div class="profile-avatar">
                   <div class="current-profile-img">
-                    {% if user.profile_picture %}
-                      <img src="{{ url_for('static', filename='profile_pics/' ~ user.profile_picture) }}" alt="Profile Picture">
+                    {% if current_user.profile_picture %}
+                      <img src="{{ url_for('static', filename='profile_pics/' ~ current_user.profile_picture) }}" alt="Profile Picture">
                     {% else %}
                           <img src="{{ url_for('static', filename='images/icc-balayan.jpg') }}" alt="Profile" class="user-avatar">
                     {% endif %}
@@ -77,10 +76,10 @@
             
                 </div>
                 <div class="profile-info">
-                  <h3>{{ user.username }}</h3>
-                  <p>{{ user.email }}</p>
+                  <h3>{{ current_user.username }}</h3>
+                  <p>{{ current_user.email }}</p>
                   <div class="profile-badges">
-                    <span class="badge role">{{ user.role }}</span>
+                    <span class="badge role">{{ current_user.role }}</span>
                   </div>
                 </div>
               </div>
@@ -95,12 +94,12 @@
 
                   <div class="form-group">
                     <label class="form-label" for="name">Full Name</label>
-                    <input type="text" id="name" name="name" class="form-input" value="{{ user.username }}" required>
+                    <input type="text" id="name" name="name" class="form-input" value="{{ current_user.username }}" required>
                   </div>
 
                   <div class="form-group">
                     <label class="form-label" for="email">Email Address</label>
-                    <input type="email" id="email" name="email" class="form-input" value="{{ user.email }}" required>
+                    <input type="email" id="email" name="email" class="form-input" value="{{ current_user.email }}" required>
                   </div>
 
                   <div class="form-group">
@@ -111,6 +110,16 @@
                   <div class="form-group">
                     <label class="form-label" for="confirm-password">Confirm Password</label>
                     <input type="password" id="confirm-password" name="confirm_password" class="form-input" placeholder="Confirm new password">
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="gate_role">Gate Role</label>
+                    <select id="gate_role" name="gate_role" class="form-select">
+                      <option value="">-- Select Gate --</option>
+                      <option value="Gate 1" {{ 'selected' if current_user.gate_role == 'Gate 1' else '' }}>Gate 1</option>
+                      <option value="Gate 2" {{ 'selected' if current_user.gate_role == 'Gate 2' else '' }}>Gate 2</option>
+                      <option value="Gate 3" {{ 'selected' if current_user.gate_role == 'Gate 3' else '' }}>Gate 3</option>
+                    </select>
                   </div>
                 </div>
 
@@ -125,7 +134,7 @@
                     </div>
                   </div>
                   <label class="toggle-switch">
-                    <input type="checkbox" class="toggle-input" id="two-factor" name="two-factor" {% if user.two_factor_enabled %}checked{% endif %}>
+                    <input type="checkbox" class="toggle-input" id="two-factor" name="two-factor" {% if current_user.two_factor_enabled %}checked{% endif %}>
                     <span class="toggle-slider"></span>
                   </label>
                 </div>
@@ -142,7 +151,6 @@
         </div>
 
          {% if qr_base64 and secret %}
-          <!-- 2FA Setup Section -->
           <div class="settings-section" id="2fa-setup-section">
             <div class="settings-card animate-in">
               <div class="card-header">
@@ -163,8 +171,7 @@
           {% endif %}
         </div>
 
-        <!-- Create Account Section -->
-        {% if session['role'] == 'admin' %} 
+        {% if current_user.role == 'admin' %} 
         <div class="settings-section" id="create-account-section">
           <div class="settings-card animate-in">
             <div class="card-header">
@@ -196,6 +203,16 @@
                   <div class="form-group">
                     <label class="form-label" for="confirm-new-password">Confirm Password</label>
                     <input type="password" id="confirm-new-password" name="confirm_password" class="form-input" placeholder="Confirm password" required>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="gate_role">Gate Role</label>
+                    <select id="gate_role" name="gate_role" class="form-select">
+                      <option value="">-- Select Gate --</option>
+                      <option value="Gate 1">Gate 1</option>
+                      <option value="Gate 2">Gate 2</option>
+                      <option value="Gate 3">Gate 3</option>
+                    </select>
                   </div>
 
                   <div class="form-group full-width">

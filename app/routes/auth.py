@@ -10,48 +10,38 @@ from app.models import User
 from app.utils.totp import verify_totp
 from app.forms import LoginForm
 from app import db, limiter, mail
-
+from flask_login import login_user, logout_user
 
 bp = Blueprint('auth', __name__)
-
 
 @bp.route("/login", methods=["GET", "POST"])
 def login():
     form = LoginForm()
     if form.validate_on_submit():
-        email = form.email.data
-        password = form.password.data
-        user = User.query.filter_by(email=email).first()
-        if not user:
-            flash("The email you entered is not registered.", "danger")
-        elif not user.check_password(password):
-            print("Login attempt: entered password:", password)
-            print("User hash:", user.password_hash)
-            flash("Incorrect password. Please try again.", "danger")
-        elif user.two_factor_enabled:
+        user = User.query.filter_by(email=form.email.data).first()
+        
+        if user.two_factor_enabled:
             session['pending_2fa_user'] = user.id
-            session['pending_2fa_pw'] = password
             return redirect(url_for("auth.totp_verify"))
         else:
-            session['user_id'] = user.id
-            session['email'] = user.email
-            session['role'] = user.role
+            login_user(user, remember=form.remember_me.data) 
             flash("Login successful!", "success")
             return redirect(url_for("main.dashboard"))
+            
     return render_template("Login.html", form=form)
 
 @bp.route("/totp-verify", methods=["GET", "POST"])
 def totp_verify():
     user_id = session.get('pending_2fa_user')
+    if not user_id:
+        return redirect(url_for('auth.login'))
+        
     user = User.query.get(user_id)
     if request.method == "POST":
         token = request.form.get("token")
         if user and verify_totp(token, user.totp_secret):
-            session['user_id'] = user.id
-            session['email'] = user.email
-            session['role'] = user.role
+            login_user(user)
             session.pop('pending_2fa_user', None)
-            session.pop('pending_2fa_pw', None)
             flash("Login successful!", "success")
             return redirect(url_for("main.dashboard"))
         else:
@@ -60,6 +50,7 @@ def totp_verify():
 
 @bp.route("/logout")
 def logout():
+    logout_user()
     session.clear()
     flash("You have been logged out.", "info")
     return redirect(url_for("auth.login"))
@@ -100,15 +91,17 @@ def reset_password(token):
     if not user:
         flash("Invalid reset link.", "danger")
         return redirect(url_for('auth.forgot_password'))
+    
     if form.validate_on_submit():
-        print("Old hash:", user.password_hash)
         user.set_password(form.password.data)
-        print("New hash:", user.password_hash)
         db.session.add(user)
         db.session.commit()
         flash("Your password has been reset. Please log in.", "success")
         return redirect(url_for('auth.login'))
     else:
-        if request.method == "POST":
-            print("Form errors:", form.errors)
+        # ✅ This block will catch and flash any form validation errors
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f"{error}", "danger")
+
     return render_template("ResetPassword.html", form=form)
