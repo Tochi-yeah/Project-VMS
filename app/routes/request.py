@@ -3,7 +3,9 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import current_user, login_required
 from app.models import db, Request, Visitor
 from app.utils.helpers import generate_unique_secure_code
-from app.mailer import send_visitor_qr_email, send_email
+from app.brevo_mailer import send_visitor_qr_email, send_group_qr_email
+# Removed Temporarily
+#from app.mailer import send_visitor_qr_email, send_email
 from app.utils.qr_decoder import generate_qr_code
 from app import csrf, socketio, limiter
 from datetime import datetime
@@ -118,7 +120,6 @@ def update_status(request_id):
 
         if new_status == "Approve":
             try:
-                from app.mailer import send_group_qr_email
                 send_group_qr_email(group_requests)
                 flash("Group QR codes sent successfully!", "success")
             except Exception as e:

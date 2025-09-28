@@ -1,7 +1,8 @@
 # app/__init__.py
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from flask_mail import Mail
+# Temporarily removed 
+#from flask_mail import Mail
 from flask_migrate import Migrate
 from dotenv import load_dotenv
 from flask_wtf import CSRFProtect
@@ -15,7 +16,8 @@ load_dotenv()  # Load environment variables from .env file
 
 # Global extensions
 db = SQLAlchemy()
-mail = Mail()
+#Removed temporarily
+#mail = Mail()
 migrate = Migrate()
 csrf = CSRFProtect()
 socketio = SocketIO(cors_allowed_origins="*")  # Add this line
@@ -34,6 +36,10 @@ def create_app():
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['BREVO_API_KEY'] = os.getenv('BREVO_API_KEY')
+    '''
+    Temporarily removed
+    # Mail Configuration
     app.config['MAIL_SERVER'] = 'smtp.gmail.com'
     app.config['MAIL_PORT'] = 587
     app.config['MAIL_USE_TLS'] = True
@@ -42,6 +48,7 @@ def create_app():
     app.config['MAIL_DEFAULT_SENDER'] = 'afablejrchito@gmail.com'
     app.config['RATELIMIT_STORAGE_URI'] = os.getenv("REDIS_URL", "memory://")
     app.config['MAIL_DEBUG'] = True
+    '''
     
     # Connection Pool Management for Render/Eventlet/Psycopg2
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
@@ -54,13 +61,16 @@ def create_app():
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         'pool_pre_ping': True
     }
-
+    #Temporarily Removed
+    '''
     if not app.config['MAIL_USERNAME'] or not app.config['MAIL_PASSWORD']:
         raise RuntimeError("Missing mail credentials in .env")
-
+    '''
+    
     # Initialize extensions
     db.init_app(app)
-    mail.init_app(app)
+    #Removed temporarily
+    #mail.init_app(app)
     migrate.init_app(app, db)
     csrf.init_app(app)
     socketio.init_app(app)
