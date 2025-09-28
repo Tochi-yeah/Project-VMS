@@ -37,6 +37,7 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['BREVO_API_KEY'] = os.getenv('BREVO_API_KEY')
+    app.config['RATELIMIT_STORAGE_URI'] = os.getenv("REDIS_URL", "memory://")
     '''
     Temporarily removed
     # Mail Configuration
@@ -66,7 +67,7 @@ def create_app():
     if not app.config['MAIL_USERNAME'] or not app.config['MAIL_PASSWORD']:
         raise RuntimeError("Missing mail credentials in .env")
     '''
-    
+
     # Initialize extensions
     db.init_app(app)
     #Removed temporarily
