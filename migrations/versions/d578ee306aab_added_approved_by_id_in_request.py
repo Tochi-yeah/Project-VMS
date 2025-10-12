@@ -61,7 +61,7 @@ def upgrade():
         batch_op.alter_column('timestamp',
                existing_type=postgresql.TIMESTAMP(timezone=True),
                nullable=True)
-        batch_op.create_unique_constraint(None, ['visit_session_id'])
+        # batch_op.create_unique_constraint(None, ['visit_session_id'])  # This line is commented out or deleted
         batch_op.drop_column('check_in_time')
         batch_op.drop_column('check_out_time')
 
@@ -73,7 +73,7 @@ def downgrade():
     with op.batch_alter_table('visitor_log', schema=None) as batch_op:
         batch_op.add_column(sa.Column('check_out_time', postgresql.TIMESTAMP(timezone=True), autoincrement=False, nullable=True))
         batch_op.add_column(sa.Column('check_in_time', postgresql.TIMESTAMP(timezone=True), autoincrement=False, nullable=True))
-        batch_op.drop_constraint(None, type_='unique')
+        # batch_op.drop_constraint(None, type_='unique') # This line is commented out or deleted
         batch_op.alter_column('timestamp',
                existing_type=postgresql.TIMESTAMP(timezone=True),
                nullable=False)

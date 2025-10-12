@@ -48,11 +48,14 @@ def dashboard():
         latest_logs_sub,
         (VisitorLog.visit_session_id == latest_logs_sub.c.visit_session_id) &
         (VisitorLog.timestamp == latest_logs_sub.c.latest_time)
-    ).filter(VisitorLog.status == 'Checked-In').count()
+    ).filter(
+        VisitorLog.status == 'Checked-In',
+        VisitorLog.timestamp >= start_of_day, # <-- This is the fix
+        VisitorLog.timestamp < end_of_day     # <-- This is the fix
+    ).count()
 
     pending_requests = Request.query.filter_by(status="Pending").count()
     
-    # ✅ Aliases for all user roles needed in the query
     U_approved = aliased(User, name='u_approved')
     U_checkin = aliased(User, name='u_checkin')
     U_checkout = aliased(User, name='u_checkout')
@@ -60,10 +63,9 @@ def dashboard():
     recent_visitors_query = db.session.query(
         VisitorLog.name,
         VisitorLog.purpose,
-        VisitorLog.person_to_visit,
+        VisitorLog.address,
         func.max(case((VisitorLog.status=='Checked-In', VisitorLog.timestamp), else_=None)).label("check_in_time"),
         func.max(case((VisitorLog.status=='Checked-Out', VisitorLog.timestamp), else_=None)).label("check_out_time"),
-        # ✅ Fetch all the data needed for the tooltips
         func.max(case((VisitorLog.status=='Checked-In', VisitorLog.check_in_gate), else_=None)).label("gate_in"),
         func.max(case((VisitorLog.status=='Checked-Out', VisitorLog.check_out_gate), else_=None)).label("gate_out"),
         func.max(case((VisitorLog.status == 'Checked-In', U_checkin.username), else_=None)).label('checked_in_by'),
@@ -80,7 +82,7 @@ def dashboard():
         VisitorLog.visit_session_id,
         VisitorLog.name,
         VisitorLog.purpose,
-        VisitorLog.person_to_visit,
+        VisitorLog.address,
     ).order_by(func.max(VisitorLog.timestamp).desc()).limit(5).all()
 
 
@@ -91,7 +93,6 @@ def dashboard():
         checked_in=checked_in,
         pending_requests=pending_requests
     )
-
 
 @bp.route("/logs")
 @login_required
@@ -114,7 +115,7 @@ def logs():
         VisitorLog.email,
         VisitorLog.number,
         VisitorLog.purpose,
-        VisitorLog.person_to_visit,
+        VisitorLog.address,
         VisitorLog.unique_code,
         func.max(case((VisitorLog.status=='Checked-In', VisitorLog.timestamp), else_=None)).label('check_in_time'),
         func.max(case((VisitorLog.status=='Checked-In', VisitorLog.check_in_gate), else_=None)).label('gate_in'),
@@ -137,7 +138,7 @@ def logs():
         VisitorLog.email,
         VisitorLog.number,
         VisitorLog.purpose,
-        VisitorLog.person_to_visit,
+        VisitorLog.address,
         VisitorLog.unique_code
     )
     if search_query:
@@ -195,8 +196,6 @@ def revisit():
             if other_purpose:
                 purpose = other_purpose
                 
-        person_to_visit = request.form.get("person", "").strip()
-
         if not qr_file or not allowed_file(qr_file.filename):
             flash("Invalid or missing QR code image.", "danger")
             return redirect(url_for('main.revisit'))
@@ -228,7 +227,7 @@ def revisit():
             email=visitor.email,
             number=visitor.number,
             purpose=purpose,
-            person_to_visit=person_to_visit if person_to_visit else visitor.last_person_to_visit,
+            address=visitor.last_address,
             unique_code=unique_code,
             status="Pending",
             timestamp=datetime.utcnow()
@@ -242,4 +241,3 @@ def revisit():
         return redirect(url_for('main.revisit'))
 
     return render_template("Already-registered.html")
-

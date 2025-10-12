@@ -7,6 +7,8 @@ from app import csrf
 from app import socketio
 from datetime import datetime
 import uuid
+import pytz
+from app.utils.helpers import get_current_time # Import the time helper
 
 bp = Blueprint('scan', __name__)
 
@@ -24,19 +26,18 @@ def scan_checkin():
     if not code:
         return jsonify({"message": "Invalid or missing QR code data."}), 400
 
-    # ✅ FIX: Check for an approved request FIRST to capture the approver's ID.
+    # 1. Check for an approved request FIRST
     req = Request.query.filter_by(unique_code=code, status="Approve").first()
     if req:
         visitor = Visitor.query.filter_by(name=req.name, number=req.number).first()
         if not visitor:
-            # This logic handles cases where a visitor might not exist yet but has a request
             visitor = Visitor(
                 name=req.name,
                 email=req.email,
                 number=req.number,
-                qr_code=code, # The code used for the request is now the permanent QR
+                qr_code=code,
                 last_purpose=req.purpose,
-                last_person_to_visit=req.person_to_visit
+                last_address=req.address
             )
             db.session.add(visitor)
             db.session.commit()
@@ -47,12 +48,13 @@ def scan_checkin():
     # 2. If no request is found, check if it's a returning visitor.
     visitor = Visitor.query.filter_by(qr_code=code).first()
     if visitor:
-        action = _process_single_visitor(visitor, code, approved_by_id=None) # No approver for a direct check-in
+        action = _process_single_visitor(visitor, code, approved_by_id=None)
         return jsonify({"message": f"{visitor.name} {action}."})
 
     # 3. Check if it matches a group_code
     group_requests = Request.query.filter_by(group_code=code, status="Approve").all()
     if group_requests:
+        # This group logic remains unchanged
         results = []
         any_checked_in = False
         visitors = []
@@ -69,14 +71,19 @@ def scan_checkin():
                     qr_code=r.unique_code,
                     group_code=code,
                     last_purpose=r.purpose,
-                    last_person_to_visit=r.person_to_visit
+                    last_address=r.address
                 )
                 db.session.add(visitor)
             visitors.append((visitor, r.unique_code))
 
             last_log = VisitorLog.query.filter_by(visitor_id=visitor.id).order_by(VisitorLog.timestamp.desc()).first()
             if last_log and last_log.status == "Checked-In":
-                any_checked_in = True
+                # Check if the last check-in was today
+                manila_tz = pytz.timezone('Asia/Manila')
+                now_manila = get_current_time()
+                last_log_manila = last_log.timestamp.astimezone(manila_tz)
+                if last_log_manila.date() == now_manila.date():
+                    any_checked_in = True
         
         db.session.commit()
 
@@ -97,9 +104,27 @@ def scan_checkin():
 
 
 def _process_single_visitor(visitor, used_code, approved_by_id=None, commit=True):
+    """
+    Processes a check-in or check-out for a single visitor.
+    If the last check-in was on a previous day, it forces a new check-in.
+    """
     last_log = VisitorLog.query.filter_by(visitor_id=visitor.id).order_by(VisitorLog.timestamp.desc()).first()
 
-    if not last_log or last_log.status == "Checked-Out":
+    # Default action is to check-in
+    should_check_in = True
+    
+    if last_log and last_log.status == "Checked-In":
+        # A check-in exists, let's see when it was
+        manila_tz = pytz.timezone('Asia/Manila')
+        now_manila = get_current_time()
+        last_log_manila = last_log.timestamp.astimezone(manila_tz)
+
+        # If the last check-in was on the same day as today, then we should check them out.
+        if last_log_manila.date() == now_manila.date():
+            should_check_in = False
+
+    if should_check_in:
+        # This is a new visit (or a new day)
         session_id = str(uuid.uuid4())
         new_log = VisitorLog(
             visitor_id=visitor.id,
@@ -107,7 +132,7 @@ def _process_single_visitor(visitor, used_code, approved_by_id=None, commit=True
             email=visitor.email,
             number=visitor.number,
             purpose=visitor.last_purpose,
-            person_to_visit=visitor.last_person_to_visit,
+            address=visitor.last_address,
             status="Checked-In",
             unique_code=used_code,
             visit_session_id=session_id,
@@ -118,22 +143,21 @@ def _process_single_visitor(visitor, used_code, approved_by_id=None, commit=True
         )
         action = "Checked-In"
     else:
-        session_id = last_log.visit_session_id
-        approved_by_id = last_log.approved_by_id
+        # This is a check-out for an existing session from today
         new_log = VisitorLog(
             visitor_id=visitor.id,
             name=visitor.name,
             email=visitor.email,
             number=visitor.number,
-            purpose=visitor.last_purpose,
-            person_to_visit=visitor.last_person_to_visit,
+            purpose=last_log.purpose,       # Use purpose from the original check-in
+            address=last_log.address,       # Use address from the original check-in
             status="Checked-Out",
             unique_code=used_code,
-            visit_session_id=session_id,
+            visit_session_id=last_log.visit_session_id,
             timestamp=datetime.utcnow(),
             check_out_by_id=current_user.id,
             check_out_gate=current_user.gate_role,
-            approved_by_id=approved_by_id
+            approved_by_id=last_log.approved_by_id
         )
         action = "Checked-Out"
 

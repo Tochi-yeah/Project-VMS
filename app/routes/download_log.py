@@ -25,7 +25,7 @@ def export_logs_excel():
         VisitorLog.email,
         VisitorLog.number,
         VisitorLog.purpose,
-        VisitorLog.person_to_visit,
+        VisitorLog.address,
         func.max(U_approved.username).label('approved_by'),
         func.max(case((VisitorLog.status == 'Checked-In', VisitorLog.timestamp))).label('check_in_time'),
         func.max(case((VisitorLog.status == 'Checked-In', VisitorLog.check_in_gate))).label('gate_in'),
@@ -46,7 +46,7 @@ def export_logs_excel():
         VisitorLog.email,
         VisitorLog.number,
         VisitorLog.purpose,
-        VisitorLog.person_to_visit
+        VisitorLog.address
     )
 
     if filter_date:
@@ -68,7 +68,7 @@ def export_logs_excel():
 
     # Define headers
     headers = [
-        "Name", "Email", "Number", "Purpose", "Person to Visit",
+        "Name", "Email", "Number", "Purpose", "Address",
         "Approved By", "Check-In Time", "Check-In Gate", "Checked-In By",
         "Check-Out Time", "Check-Out Gate", "Checked-Out By", "Date"
     ]
@@ -87,7 +87,7 @@ def export_logs_excel():
         visit_date = log.visit_date.strftime('%B %d, %Y') if log.visit_date else '—'
         
         row_data = [
-            log.name, log.email, log.number, log.purpose, log.person_to_visit,
+            log.name, log.email, log.number, log.purpose, log.address,
             log.approved_by or '—',
             check_in_time,
             log.gate_in or '—',

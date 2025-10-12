@@ -16,7 +16,7 @@ class Visitor(db.Model):
     unique_code = db.Column(db.String(32), unique=True, nullable=True)
     group_code = db.Column(db.String(32), nullable=True)
     last_purpose = db.Column(db.String(200))
-    last_person_to_visit = db.Column(db.String(100))
+    last_address = db.Column(db.String(100))
 
     def __repr__(self):
         return f'<Visitor {self.name}>'    
@@ -28,11 +28,11 @@ class Request(db.Model):
     email = db.Column(db.String(120), nullable=False)
     number = db.Column(db.String(20), nullable=False)
     purpose = db.Column(db.String(200), nullable=False)
-    person_to_visit = db.Column(db.String(100), nullable=False)
+    address = db.Column(db.String(100), nullable=False)
     status = db.Column(db.String(20), default="Pending")  # Optional: for future use
     timestamp = db.Column(TIMESTAMP(timezone=True), nullable=False)
     unique_code = db.Column(db.String(10), unique=True, nullable=False)
-    code_used = db.Column(db.Boolean, default=False)
+    # code_used = db.Column(db.Boolean, default=False)
     group_code = db.Column(db.String(64), nullable=True)
     approved_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
 
@@ -49,7 +49,7 @@ class VisitorLog(db.Model):
     email = db.Column(db.String(120), nullable=False)
     number = db.Column(db.String(20), nullable=False)
     purpose = db.Column(db.String(200), nullable=False)
-    person_to_visit = db.Column(db.String(100), nullable=False)
+    address = db.Column(db.String(100), nullable=False)
     status = db.Column(db.String(20), nullable=False)  # 'Checked-In' or 'Checked-Out'
     timestamp = db.Column(TIMESTAMP(timezone=True), nullable=False)
     unique_code = db.Column(db.String(10))
@@ -64,8 +64,8 @@ class VisitorLog(db.Model):
     check_out_gate = db.Column(db.String(50), nullable=True)
 
     # ✅ Explicit timestamps
-    check_in_time = db.Column(TIMESTAMP(timezone=True), nullable=True)
-    check_out_time = db.Column(TIMESTAMP(timezone=True), nullable=True)
+    #check_in_time = db.Column(TIMESTAMP(timezone=True), nullable=True)
+    #check_out_time = db.Column(TIMESTAMP(timezone=True), nullable=True)
 
     # Relationships
     approved_by = db.relationship("User", foreign_keys=[approved_by_id], backref="logs_approved", lazy="joined")

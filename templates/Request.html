@@ -74,7 +74,7 @@
                 <th>Email</th>
                 <th>Phone</th>
                 <th>Purpose</th>
-                <th>Visiting</th>
+                <th>Address</th>
                 <th>Code</th>
                 <th>Action</th>
               </tr>
@@ -113,7 +113,7 @@
                         <td>{{ request.email }}</td>
                         <td>{{ request.number }}</td>
                         <td>{{ request.purpose }}</td>
-                        <td>{{ request.person_to_visit }}</td>
+                        <td>{{ request.address }}</td>
                         <td>
                           <code style="background: var(--secondary-color); padding: 4px 8px; border-radius: 4px; font-size: 12px;">
                             {{ request.unique_code }}
@@ -132,7 +132,7 @@
                       <td>{{ request.email }}</td>
                       <td>{{ request.number }}</td>
                       <td>{{ request.purpose }}</td>
-                      <td>{{ request.person_to_visit }}</td>
+                      <td>{{ request.address }}</td>
                       <td>
                         <code style="background: var(--secondary-color); padding: 4px 8px; border-radius: 4px; font-size: 12px;">
                           {{ request.unique_code }}

@@ -19,11 +19,11 @@ def download_bulk_template():
 
     # Define the headers. These must exactly match the column names
     # expected by your upload_csv function in request.py
-    headers = ["Name", "Email", "Phone", "Purpose", "PersonToVisit"]
+    headers = ["Name", "Email", "Phone", "Purpose", "Address"]
     sheet.append(headers)
 
     # Add a sample row to guide the user on the expected format
-    sample_data = ["John Doe", "john.doe@example.com", "123-456-7890", "Campus Tour", "Jane Smith"]
+    sample_data = ["John Doe", "john.doe@example.com", "123-456-7890", "Campus Tour", "123 Main St, Tuy, Batangas"]
     sheet.append(sample_data)
 
     # Save the workbook to a byte stream in memory
