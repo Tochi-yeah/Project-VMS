@@ -100,6 +100,7 @@
                             <option value="" disabled selected>Select</option>
                             <option value="Approve">Approve</option>
                             <option value="Reject">Reject</option>
+                            <option value="Direct">Direct</option> 
                           </select>
                         </form>
                       </td>
@@ -145,6 +146,7 @@
                             <option value="" disabled {% if not request.status or request.status == 'Pending' %}selected{% endif %}>Select</option>
                             <option value="Approve" {% if request.status == 'Approve' %}selected{% endif %}>Approve</option>
                             <option value="Reject" {% if request.status == 'Reject' %}selected{% endif %}>Reject</option>
+                            <option value="Direct">Direct</option>
                           </select>
                         </form>
                       </td>
