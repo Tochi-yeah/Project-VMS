@@ -23,37 +23,60 @@ def scan_checkin():
         return jsonify({"message": "Invalid or missing JSON data."}), 400
 
     code = data.get("qr_data", "").strip()
-    # TWEAK: We now check for a purpose sent from the modal
     purpose_from_modal = data.get("purpose")
 
     if not code:
         return jsonify({"message": "Invalid or missing QR code data."}), 400
 
-    # Your original logic to detect if this is a check-out
-    last_log = VisitorLog.query.join(Visitor).filter(Visitor.qr_code == code).order_by(VisitorLog.timestamp.desc()).first()
-    is_checkout = False
-    if last_log and last_log.status == "Checked-In":
-        manila_tz = pytz.timezone('Asia/Manila')
-        if last_log.timestamp.astimezone(manila_tz).date() == get_current_time().date():
-            is_checkout = True
-    
-    # If it's a check-out, process it immediately and exit.
-    if is_checkout:
-        visitor = Visitor.query.get(last_log.visitor_id)
-        action = _process_single_visitor(visitor, code)
-        return jsonify({"message": f"{visitor.name} {action}."})
+    manila_tz = pytz.timezone('Asia/Manila')
+    today = get_current_time().date()
 
-    # TWEAK: If it's a check-in, we decide whether to show the modal or process the check-in
+    # --- UNIFIED LOGIC ---
+
+    # 1. Check for an active INDIVIDUAL check-in (This is the CHECK-OUT case)
+    last_log = db.session.query(VisitorLog).filter(
+        VisitorLog.unique_code == code, 
+        VisitorLog.status == "Checked-In"
+    ).order_by(VisitorLog.timestamp.desc()).first()
+
+    if last_log and last_log.timestamp.astimezone(manila_tz).date() == today:
+        visitor = Visitor.query.get(last_log.visitor_id)
+        action_result = _process_single_visitor(visitor, code)
+        return jsonify({"message": f"{visitor.name} {action_result}."})
+
+    # 2. Check for GROUP check-out using the group code
+    # FIXED: The query is now corrected to properly join and find group members.
+    group_logs_to_checkout = db.session.query(VisitorLog).join(
+        Request, VisitorLog.unique_code == Request.unique_code
+    ).filter(
+        Request.group_code == code,
+        VisitorLog.status == "Checked-In"
+    ).all()
+    
+    if group_logs_to_checkout:
+        checkout_count = 0
+        for log in group_logs_to_checkout:
+            if log.timestamp.astimezone(manila_tz).date() == today:
+                visitor = Visitor.query.get(log.visitor_id)
+                _process_single_visitor(visitor, log.unique_code, commit=False)
+                checkout_count += 1
+        if checkout_count > 0:
+            db.session.commit()
+            socketio.emit('dashboard_update')
+            socketio.emit('request_update')
+            return jsonify({"message": f"{checkout_count} members of group {code} Checked-Out."})
+
+
+    # 3. Handle CHECK-IN logic (showing modal or processing)
     if purpose_from_modal is not None:
-        # A purpose was sent, so the user has confirmed the modal. We can proceed.
         req = Request.query.filter_by(unique_code=code, status="Approve").first()
         visitor = Visitor.query.filter_by(qr_code=code).first()
         
         target_visitor = None
-        if req: # New registration
+        if req:
             target_visitor = _find_or_create_visitor(req)
-            req.status = "Completed" # Mark the request as done
-        elif visitor: # Returning visitor
+            req.status = "Completed"
+        elif visitor:
             target_visitor = visitor
             target_visitor.last_purpose = purpose_from_modal
 
@@ -64,19 +87,16 @@ def scan_checkin():
         else:
             return jsonify({"message": "Code not recognized."}), 404
     else:
-        # No purpose was sent. This is the initial scan. Tell the frontend to show the modal.
         req = Request.query.filter_by(unique_code=code, status="Approve").first()
         if req:
             return jsonify({"action": "show_modal", "name": req.name, "purpose": req.purpose})
 
         visitor = Visitor.query.filter_by(qr_code=code).first()
         if visitor:
-            return jsonify({"action": "show_modal", "name": visitor.name, "purpose": visitor.last_purpose or "" })
+            return jsonify({"action": "show_modal", "name": visitor.name, "purpose": ""})
         
-        # Fallback for group codes if individual checks fail
         group_requests = Request.query.filter_by(group_code=code, status="Approve").all()
         if group_requests:
-            # For simplicity, we will process group check-ins directly without a modal
             results = []
             for r in group_requests:
                 group_visitor = _find_or_create_visitor(r)
@@ -85,12 +105,12 @@ def scan_checkin():
                 r.status = "Completed"
             db.session.commit()
             socketio.emit('dashboard_update')
+            socketio.emit('request_update')
             return jsonify({"message": f"Group {code} processed", "details": results})
 
         return jsonify({"message": "QR code or unique code not recognized."}), 404
 
 def _find_or_create_visitor(req):
-    """Helper to find or create a visitor from a Request object."""
     visitor = Visitor.query.filter_by(name=req.name, number=req.number).first()
     if not visitor:
         visitor = Visitor(
@@ -102,7 +122,6 @@ def _find_or_create_visitor(req):
     return visitor
 
 def _process_single_visitor(visitor, used_code, purpose_override=None, commit=True):
-    """Your original processing function with one crucial fix."""
     last_log = VisitorLog.query.filter_by(visitor_id=visitor.id).order_by(VisitorLog.timestamp.desc()).first()
     should_check_in = True
     if last_log and last_log.status == "Checked-In":
@@ -117,7 +136,6 @@ def _process_single_visitor(visitor, used_code, purpose_override=None, commit=Tr
             address=visitor.last_address, status="Checked-In", unique_code=used_code,
             visit_session_id=str(uuid.uuid4()), timestamp=datetime.utcnow(),
             check_in_by_id=current_user.id, check_in_gate=current_user.gate_role,
-            # FIX: This correctly sets the approver to the person checking them in.
             approved_by_id=current_user.id
         )
         action = "Checked-In"
@@ -136,5 +154,6 @@ def _process_single_visitor(visitor, used_code, purpose_override=None, commit=Tr
     if commit:
         db.session.commit()
         socketio.emit('dashboard_update')
+        socketio.emit('request_update')
 
     return action
