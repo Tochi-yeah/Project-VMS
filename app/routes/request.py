@@ -1,5 +1,5 @@
 # app/routes/request.py
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from flask_login import current_user, login_required
 from app.models import db, Request, Visitor, VisitorLog
 from app.utils.helpers import generate_unique_secure_code, get_current_time
@@ -12,18 +12,80 @@ import pytz
 import uuid
 import pandas as pd
 import secrets
+from threading import Thread
 
 bp = Blueprint('request_bp', __name__)
 
+# MODIFIED: The background function now accepts simple data, not database objects.
+def send_email_in_background(app, requests_data):
+    """
+    This function runs in a separate thread with DETACHED data.
+    """
+    with app.app_context():
+        try:
+            # Re-create temporary objects from the data for the mailer function
+            request_objects = [Request(**data) for data in requests_data]
+            if len(request_objects) > 1:
+                send_group_qr_email(request_objects)
+            elif len(request_objects) == 1 and request_objects[0].email:
+                send_visitor_qr_email(request_objects[0])
+        except Exception as e:
+            print(f"BACKGROUND EMAIL FAILED: {e}")
+        finally:
+            # This is crucial to close the session within the thread
+            db.session.remove()
+
 @bp.route("/request")
 @login_required
-@csrf.exempt      # Decorator restored
-@limiter.exempt   # Decorator restored
 def request_page():
-    requests = Request.query.filter_by(status="Pending").all()
+    search_query = request.args.get("search_query", "").strip()
+    filter_date_str = request.args.get("filter_date")
 
+    # Start with a query of ALL requests.
+    query = Request.query
+
+    # Apply date filter ONLY if one is provided
+    if filter_date_str:
+        try:
+            target_date = datetime.strptime(filter_date_str, "%Y-%m-%d").date()
+            query = query.filter(db.func.date(db.func.timezone('Asia/Manila', Request.timestamp)) == target_date)
+        except ValueError:
+            # This handles the 'Clear' case, so we don't filter by date
+            pass
+    # ADDED BACK: If no date is in the URL, default the filter to today's date.
+    elif filter_date_str is None:
+        today = get_current_time().date()
+        query = query.filter(db.func.date(db.func.timezone('Asia/Manila', Request.timestamp)) == today)
+
+    # Apply search filter if provided
+    if search_query:
+        query = query.filter(Request.name.ilike(f"%{search_query}%"))
+    
+    all_matching_requests = query.order_by(Request.timestamp.desc()).all()
+
+    # Find out which of these visitors have a "Checked-In" log entry
+    checked_in_codes = set()
+    if all_matching_requests:
+        unique_codes = [req.unique_code for req in all_matching_requests]
+        
+        subquery = db.session.query(
+            VisitorLog.unique_code,
+            db.func.max(VisitorLog.timestamp).label('max_timestamp')
+        ).filter(VisitorLog.unique_code.in_(unique_codes)).group_by(VisitorLog.unique_code).subquery()
+
+        checked_in_logs = db.session.query(VisitorLog.unique_code).join(
+            subquery,
+            db.and_(
+                VisitorLog.unique_code == subquery.c.unique_code,
+                VisitorLog.timestamp == subquery.c.max_timestamp
+            )
+        ).filter(VisitorLog.status == 'Checked-In').all()
+        
+        checked_in_codes = {log.unique_code for log in checked_in_logs}
+
+    # Re-create the grouping logic for the template
     grouped_requests = defaultdict(list)
-    for req in requests:
+    for req in all_matching_requests:
         if req.group_code:
             grouped_requests[req.group_code].append(req)
         else:
@@ -32,7 +94,9 @@ def request_page():
     return render_template(
         "Request.html",
         groups=grouped_requests,
-        per_page=10
+        checked_in_codes=checked_in_codes,
+        search_query=search_query,
+        filter_date=filter_date_str
     )
 
 @bp.route("/Visitor-register-form")
@@ -40,151 +104,124 @@ def online_reg():
     return render_template("Visitor-register.html")
 
 @bp.route("/submit-request", methods=["POST"])
-@csrf.exempt      # Decorator restored
-@limiter.exempt   # Decorator restored
+@csrf.exempt
+@limiter.exempt
 def submit_request():
     first_name = request.form.get("first_name", "").strip()
     middle_initial_raw = request.form.get("middle_initial", "").strip()
     last_name = request.form.get("last_name", "").strip()
-
     middle_initial = middle_initial_raw[0].upper() if middle_initial_raw else ""
     full_name = f"{first_name} {middle_initial+'. ' if middle_initial else ''}{last_name}"
-
     no_email = request.form.get("no_email")
     email = "" if no_email else request.form.get("email", "").strip()
-
     if not no_email and not email:
         flash("Email is required unless you check the 'No Email' box.", "danger")
         return redirect(url_for('request_bp.online_reg'))
-
     number = request.form.get("cell_number", "").strip()
     purpose = request.form.get("purpose", "").strip()
-
     if purpose == "Other":
-        other_purpose = request.form.get("other_purpose", "").strip()
-        purpose = other_purpose
-
+        purpose = request.form.get("other_purpose", "").strip()
     address = request.form.get("address", "").strip()
-
     if not all([first_name, last_name, number, purpose, address]):
         flash("Please fill out all required fields.", "danger")
         return redirect(url_for('request_bp.online_reg'))
-
     unique_code = generate_unique_secure_code()
-
     new_request = Request(
-        name=full_name,
-        email=email,
-        number=number,
-        purpose=purpose,
-        address=address,
-        unique_code=unique_code,
+        name=full_name, email=email, number=number, purpose=purpose,
+        address=address, unique_code=unique_code, status="Approve",
         timestamp=datetime.utcnow()
     )
     db.session.add(new_request)
     db.session.commit()
+
+    # MODIFIED: Send simple data dictionary to the background thread
+    if new_request.email:
+        request_data = [{
+            "name": new_request.name,
+            "email": new_request.email,
+            "unique_code": new_request.unique_code
+        }]
+        thread = Thread(target=send_email_in_background, args=[current_app._get_current_object(), request_data])
+        thread.start()
+
     socketio.emit('dashboard_update')
     socketio.emit('request_update')
-
-    flash("Request submitted successfully!", "success")
+    flash("You have been successfully registered! Please await check-in.", "success")
     return redirect(url_for('request_bp.online_reg'))
 
-@bp.route("/update-status/<int:request_id>", methods=["POST"])
-@limiter.exempt
-def update_status(request_id):
+@bp.route("/direct-checkin/<int:request_id>", methods=["POST"])
+@login_required
+def direct_checkin(request_id):
     req = Request.query.get_or_404(request_id)
-    new_status = request.form.get("status")
+    visitor = Visitor.query.filter_by(name=req.name, number=req.number).first()
+    if not visitor:
+        visitor = Visitor(name=req.name, email=req.email, number=req.number, qr_code=req.unique_code, last_purpose=req.purpose, last_address=req.address)
+        db.session.add(visitor)
+        db.session.commit()
+    else:
+        visitor.last_purpose = req.purpose
+        visitor.last_address = req.address
+    last_log = VisitorLog.query.filter_by(visitor_id=visitor.id).order_by(VisitorLog.timestamp.desc()).first()
+    is_already_checked_in = False
+    if last_log and last_log.status == "Checked-In":
+        manila_tz = pytz.timezone('Asia/Manila')
+        now_manila = get_current_time()
+        if last_log.timestamp.astimezone(manila_tz).date() == now_manila.date():
+            is_already_checked_in = True
+    if not is_already_checked_in:
+        new_log = VisitorLog(visitor_id=visitor.id, name=visitor.name, email=visitor.email, number=visitor.number, purpose=req.purpose, address=req.address, status="Checked-In", unique_code=req.unique_code, visit_session_id=str(uuid.uuid4()), timestamp=datetime.utcnow(), check_in_by_id=current_user.id, check_in_gate=current_user.gate_role, approved_by_id=current_user.id)
+        db.session.add(new_log)
+        flash(f"{visitor.name} has been checked in.", "success")
+    else:
+        flash(f"{visitor.name} was already checked in today.", "info")
+    req.status = "Completed"
+    db.session.commit()
+    socketio.emit('dashboard_update')
+    socketio.emit('request_update')
+    return redirect(url_for('request_bp.request_page'))
 
-    if new_status not in ["Approve", "Reject", "Direct"]: # Add "Direct" to the list of valid statuses
-        flash("Invalid status value.", "error")
-        return redirect(url_for('request_bp.request_page'))
-
-    # Handle "Direct Check-In"
-    if new_status == "Direct":
-        # --- 1. Approve the Request ---
-        req.status = "Approve"
-        req.approved_by_id = current_user.id
-        
-        # --- 2. Find or Create the Visitor ---
+@bp.route("/direct-checkin-group/<group_code>", methods=["POST"])
+@login_required
+def direct_checkin_group(group_code):
+    group_requests = Request.query.filter_by(group_code=group_code, status="Approve").all()
+    checked_in_count = 0
+    for req in group_requests:
         visitor = Visitor.query.filter_by(name=req.name, number=req.number).first()
         if not visitor:
-            visitor = Visitor(
-                name=req.name,
-                email=req.email,
-                number=req.number,
-                qr_code=req.unique_code,
-                last_purpose=req.purpose,
-                last_address=req.address
-            )
+            visitor = Visitor(name=req.name, email=req.email, number=req.number, qr_code=req.unique_code, last_purpose=req.purpose, last_address=req.address)
             db.session.add(visitor)
-            db.session.commit() # Commit to get visitor.id
+            db.session.commit()
         else:
             visitor.last_purpose = req.purpose
             visitor.last_address = req.address
-
-        # --- 3. Create a "Checked-In" Log Entry ---
         last_log = VisitorLog.query.filter_by(visitor_id=visitor.id).order_by(VisitorLog.timestamp.desc()).first()
         is_already_checked_in = False
         if last_log and last_log.status == "Checked-In":
-            manila_tz = pytz.timezone('Asia/Manila')
-            now_manila = get_current_time()
-            last_log_manila = last_log.timestamp.astimezone(manila_tz)
-            if last_log_manila.date() == now_manila.date():
+            if last_log.timestamp.astimezone(pytz.timezone('Asia/Manila')).date() == get_current_time().date():
                 is_already_checked_in = True
-
         if not is_already_checked_in:
-            new_log = VisitorLog(
-                visitor_id=visitor.id, name=visitor.name, email=visitor.email, number=visitor.number,
-                purpose=req.purpose, address=req.address, status="Checked-In", unique_code=req.unique_code,
-                visit_session_id=str(uuid.uuid4()), timestamp=datetime.utcnow(),
-                check_in_by_id=current_user.id, check_in_gate=current_user.gate_role, approved_by_id=current_user.id
-            )
+            new_log = VisitorLog(visitor_id=visitor.id, name=visitor.name, email=visitor.email, number=visitor.number, purpose=req.purpose, address=req.address, status="Checked-In", unique_code=req.unique_code, visit_session_id=str(uuid.uuid4()), timestamp=datetime.utcnow(), check_in_by_id=current_user.id, check_in_gate=current_user.gate_role, approved_by_id=current_user.id)
             db.session.add(new_log)
-            flash(f"{visitor.name} has been approved and checked in.", "success")
-        else:
-            flash(f"{visitor.name} was already checked in today. Request approved.", "info")
-
-        db.session.commit()
-        socketio.emit('dashboard_update')
-        socketio.emit('request_update')
-        return redirect(url_for('request_bp.request_page'))
-
-    # This part handles regular "Approve" and "Reject"
-    if req.group_code:  
-        group_requests = Request.query.filter_by(group_code=req.group_code).all()
-        for r in group_requests:
-            r.status = new_status
-            if new_status == "Approve":
-                r.approved_by_id = current_user.id
-        db.session.commit()
-        # ... (rest of group logic remains the same)
-    else:
-        req.status = new_status
-        if new_status == "Approve":
-            req.approved_by_id = current_user.id
-        db.session.commit()
-        # ... (rest of single approve/reject logic remains the same)
-
-    flash(f"Request status has been updated to {new_status}.", "success")
+            checked_in_count += 1
+        req.status = "Completed"
+    db.session.commit()
+    flash(f"{checked_in_count} members of group {group_code} have been checked in.", "success")
     socketio.emit('dashboard_update')
     socketio.emit('request_update')
     return redirect(url_for('request_bp.request_page'))
 
 @bp.route('/Multi-form-entry', methods=['GET', 'POST'])
-@limiter.exempt   # Decorator restored
-@csrf.exempt      # Decorator restored
+@limiter.exempt
+@csrf.exempt
 def multi_form_entry():
     if request.method == 'POST':
         idx = 1
         group_code = secrets.token_urlsafe(12)
         created_requests = []
-
         while True:
             first_name = request.form.get(f'first_name_{idx}')
+            if not first_name: break
             last_name = request.form.get(f'last_name_{idx}')
-            if not first_name or not last_name:
-                break
-
             middle_initial = request.form.get(f'middle_initial_{idx}')
             phone = request.form.get(f'phone_{idx}')
             email = request.form.get(f'email_{idx}')
@@ -195,88 +232,83 @@ def multi_form_entry():
             final_purpose = other_purpose if purpose == 'Other' else purpose
             full_name = f"{first_name} {middle_initial or ''} {last_name}".strip()
             email = "" if no_email else (email or "").strip()
-            unique_code = secrets.token_urlsafe(8)[:10]
-
+            unique_code = generate_unique_secure_code()
             new_request = Request(
-                name=full_name,
-                email=email,
-                number=phone,
-                purpose=final_purpose,
-                address=address,
-                unique_code=unique_code,
-                status="Pending",
-                timestamp=datetime.utcnow(),
-                group_code=group_code
+                name=full_name, email=email, number=phone, purpose=final_purpose,
+                address=address, unique_code=unique_code, status="Approve",
+                timestamp=datetime.utcnow(), group_code=group_code
             )
             created_requests.append(new_request)
             idx += 1
+        if created_requests:
+            db.session.add_all(created_requests)
+            db.session.commit()
+            
+            # MODIFIED: Create a list of simple data dictionaries
+            requests_data = [{
+                "name": req.name,
+                "email": req.email,
+                "unique_code": req.unique_code,
+                "group_code": req.group_code
+            } for req in created_requests if req.email]
+            
+            if requests_data:
+                thread = Thread(target=send_email_in_background, args=[current_app._get_current_object(), requests_data])
+                thread.start()
 
-        db.session.add_all(created_requests)
-        db.session.commit()
-        socketio.emit('request_update')
-
-        flash(f"{len(created_requests)} requests submitted! Awaiting approval.", "success")
+            socketio.emit('request_update')
+            flash(f"{len(created_requests)} visitors successfully registered!", "success")
         return redirect(url_for('request_bp.multi_form_entry'))
-
     return render_template('Multi-form-entry.html')
 
 @bp.route("/upload_csv", methods=["POST"])
-@csrf.exempt      # Decorator restored
+@csrf.exempt
 def upload_csv():
     file = request.files.get("file")
-
     if not file:
         flash("No file selected.", "danger")
         return redirect(url_for("request_bp.request_page"))
-
     filename = secure_filename(file.filename)
     ext = filename.rsplit(".", 1)[-1].lower()
-
     try:
-        if ext == "csv":
-            df = pd.read_csv(file)
-        elif ext in ["xlsx", "xls"]:
-            df = pd.read_excel(file)
+        if ext == "csv": df = pd.read_csv(file)
+        elif ext in ["xlsx", "xls"]: df = pd.read_excel(file)
         else:
             flash("Invalid file format. Please upload a CSV or Excel file.", "danger")
             return redirect(url_for("request_bp.request_page"))
     except Exception as e:
         flash(f"Failed to process file: {str(e)}", "danger")
         return redirect(url_for("request_bp.request_page"))
-
     created_requests = []
     group_code = secrets.token_urlsafe(12)
-
     for _, row in df.iterrows():
         full_name = str(row.get("Name", "")).strip()
-        email = str(row.get("Email", "")).strip()
-        phone = str(row.get("Phone", "")).strip()
-        purpose = str(row.get("Purpose", "")).strip()
-        address = str(row.get("Address", "")).strip()
-
-        if not full_name or not phone or not purpose or not address:
-            continue
-
-        unique_code = secrets.token_urlsafe(8)[:10]
+        if not full_name: continue
         new_request = Request(
-            name=full_name,
-            email=email,
-            number=phone,
-            purpose=purpose,
-            address=address,
-            unique_code=unique_code,
-            status="Pending",
-            timestamp=datetime.utcnow(),
-            group_code=group_code
+            name=full_name, email=str(row.get("Email", "")).strip(), number=str(row.get("Phone", "")).strip(),
+            purpose=str(row.get("Purpose", "")).strip(), address=str(row.get("Address", "")).strip(),
+            unique_code=generate_unique_secure_code(), status="Approve",
+            timestamp=datetime.utcnow(), group_code=group_code
         )
         created_requests.append(new_request)
-
     if created_requests:
         db.session.add_all(created_requests)
         db.session.commit()
+
+        # MODIFIED: Create a list of simple data dictionaries
+        requests_data = [{
+            "name": req.name,
+            "email": req.email,
+            "unique_code": req.unique_code,
+            "group_code": req.group_code
+        } for req in created_requests if req.email]
+
+        if requests_data:
+            thread = Thread(target=send_email_in_background, args=[current_app._get_current_object(), requests_data])
+            thread.start()
+
         socketio.emit("request_update")
         flash(f"{len(created_requests)} requests uploaded successfully!", "success")
     else:
         flash("No valid rows found in the file.", "warning")
-
     return redirect(url_for("request_bp.request_page"))

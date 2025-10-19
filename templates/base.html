@@ -10,6 +10,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script src="{{ url_for('static', filename='js/modal/global.js') }}" defer></script>
 </head>
 <body>
     {% include 'includes/navbar.html' %}
@@ -17,6 +19,19 @@
         {% block content %}
         {% endblock %}
 
-<script src="{{ url_for('static', filename='js/base.js') }}"></script>
+
+    <div id="flash-container" style="display: none;">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash-message" data-category="{{ category }}" data-message="{{ message }}"></div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    </div>
+
+<script src="{{ url_for('static', filename='js/base.js') }}" defer></script>
+
+<div id="notification" class="notification"></div>
 </body>
 </html>

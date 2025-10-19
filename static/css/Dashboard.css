@@ -532,6 +532,41 @@
       opacity: 1;
     }
 
+        /* Notification */
+    .notification {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--success-color);
+      color: white;
+      padding: 16px 24px;
+      border-radius: 12px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      display: none;
+      z-index: 9999;
+      font-weight: 600;
+      font-size: 14px;
+      min-width: 300px;
+      text-align: center;
+    }
+
+    #notification {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #28a745;
+    color: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    display: none;
+    z-index: 9999;
+    justify-content: center;
+    }
+
+
     /* Animations */
     @keyframes fadeInUp {
       from {

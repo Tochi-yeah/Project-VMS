@@ -25,41 +25,53 @@ def allowed_file(filename):
 def index():
     return redirect(url_for("auth.login"))
 
+
 @bp.route("/dashboard")
 @login_required
 def dashboard():
     manila_tz = pytz.timezone("Asia/Manila")
     now_manila = get_current_time()
-    start_of_day = now_manila.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(pytz.utc)
-    end_of_day = start_of_day + timedelta(days=1)
+    
+    start_of_day_manila = now_manila.replace(hour=0, minute=0, second=0, microsecond=0)
+    end_of_day_manila = start_of_day_manila + timedelta(days=1)
+    start_utc = start_of_day_manila.astimezone(pytz.utc)
+    end_utc = end_of_day_manila.astimezone(pytz.utc)
 
+    # Calculation for "Registered Today"
+    registered_today = Request.query.filter(
+        Request.timestamp >= start_utc,
+        Request.timestamp < end_utc
+    ).count()
+    today_date_str = now_manila.strftime('%Y-%m-%d')
+
+    # Calculation for "Visitors Today"
     visitor_today = db.session.query(VisitorLog.visit_session_id).filter(
         VisitorLog.status == "Checked-In",
-        VisitorLog.timestamp >= start_of_day,
-        VisitorLog.timestamp < end_of_day
+        VisitorLog.timestamp >= start_utc,
+        VisitorLog.timestamp < end_utc
     ).distinct().count()
 
+    # Subquery for latest logs (unchanged)
     latest_logs_sub = db.session.query(
         VisitorLog.visit_session_id,
         func.max(VisitorLog.timestamp).label("latest_time")
     ).group_by(VisitorLog.visit_session_id).subquery()
 
+    # Corrected calculation for "Currently Checked In"
     checked_in = db.session.query(VisitorLog).join(
         latest_logs_sub,
         (VisitorLog.visit_session_id == latest_logs_sub.c.visit_session_id) &
         (VisitorLog.timestamp == latest_logs_sub.c.latest_time)
     ).filter(
         VisitorLog.status == 'Checked-In',
-        VisitorLog.timestamp >= start_of_day, # <-- This is the fix
-        VisitorLog.timestamp < end_of_day     # <-- This is the fix
+        VisitorLog.timestamp >= start_utc, # <-- THIS LINE WAS ADDED TO FIX THE COUNT
+        VisitorLog.timestamp < end_utc      # <-- THIS LINE WAS ADDED TO FIX THE COUNT
     ).count()
 
-    pending_requests = Request.query.filter_by(status="Pending").count()
-    
+    # Query for "Recent Visitors" table (unchanged)
     U_approved = aliased(User, name='u_approved')
     U_checkin = aliased(User, name='u_checkin')
     U_checkout = aliased(User, name='u_checkout')
-    
     recent_visitors_query = db.session.query(
         VisitorLog.name,
         VisitorLog.purpose,
@@ -85,13 +97,13 @@ def dashboard():
         VisitorLog.address,
     ).order_by(func.max(VisitorLog.timestamp).desc()).limit(5).all()
 
-
     return render_template(
         "Dashboard.html",
         logs=recent_visitors_query,
         visitor_today=visitor_today,
         checked_in=checked_in,
-        pending_requests=pending_requests
+        registered_today=registered_today,
+        today_date_str=today_date_str
     )
 
 @bp.route("/logs")
@@ -183,61 +195,3 @@ def analytic():
 @login_required
 def setting():
     return render_template("Setting.html")
-
-@bp.route("/Registered-visitor-update", methods=["GET", "POST"])
-@csrf.exempt
-@limiter.exempt
-def revisit():
-    if request.method == "POST":
-        qr_file = request.files.get("qr_upload")
-        purpose = request.form.get("purpose", "").strip()
-        if purpose == "Other":
-            other_purpose = request.form.get("other_purpose", "").strip()
-            if other_purpose:
-                purpose = other_purpose
-                
-        if not qr_file or not allowed_file(qr_file.filename):
-            flash("Invalid or missing QR code image.", "danger")
-            return redirect(url_for('main.revisit'))
-
-        temp_dir = os.path.join(current_app.root_path, 'static', 'temp')
-        os.makedirs(temp_dir, exist_ok=True)
-
-        filename = f"qr_{uuid.uuid4().hex}.png"
-        temp_path = os.path.join(temp_dir, filename)
-        qr_file.save(temp_path)
-
-        qr_code_value = decode_qr(temp_path)
-
-        os.remove(temp_path)
-
-        if not qr_code_value:
-            flash("Could not read QR code. Please try a clearer image.", "danger")
-            return redirect(url_for('main.revisit'))
-
-        visitor = Visitor.query.filter_by(qr_code=qr_code_value).first()
-        if not visitor:
-            flash("QR code not recognized. Visitor not found.", "danger")
-            return redirect(url_for('main.revisit'))
-
-        unique_code = generate_unique_secure_code()
-
-        new_request = Request(
-            name=visitor.name,
-            email=visitor.email,
-            number=visitor.number,
-            purpose=purpose,
-            address=visitor.last_address,
-            unique_code=unique_code,
-            status="Pending",
-            timestamp=datetime.utcnow()
-        )
-
-        db.session.add(new_request)
-        db.session.commit()
-        socketio.emit('request_update')
-
-        flash("Your visit request has been submitted for approval.", "success")
-        return redirect(url_for('main.revisit'))
-
-    return render_template("Already-registered.html")

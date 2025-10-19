@@ -54,14 +54,14 @@
             </div>
           </div>
         </div>
-      <a href="{{ url_for('request_bp.request_page') }}" class="stat-card animate-in">
+      <a href="{{ url_for('request_bp.request_page', filter_date=today_date_str) }}" class="stat-card animate-in">
           <div class="stat-header">
             <div>
-              <div class="stat-title">Pending Requests</div>
-              <div class="stat-value">{{ pending_requests }}</div>
+              <div class="stat-title">Registered Today</div>
+              <div class="stat-value">{{ registered_today }}</div>
             </div>
             <div class="stat-icon pending">
-              <i class="fas fa-clock"></i>
+              <i class="fas fa-user-plus"></i>
             </div>
           </div>
       </a>
