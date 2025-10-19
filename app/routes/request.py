@@ -1,4 +1,6 @@
 # app/routes/request.py
+# This version sends emails directly (synchronously) without using background threads.
+
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from flask_login import current_user, login_required
 from app.models import db, Request, Visitor, VisitorLog
@@ -12,85 +14,39 @@ import pytz
 import uuid
 import pandas as pd
 import secrets
-from threading import Thread
 
 bp = Blueprint('request_bp', __name__)
-
-# MODIFIED: The background function now accepts simple data, not database objects.
-def send_email_in_background(app, requests_data):
-    """
-    This function runs in a separate thread with DETACHED data.
-    """
-    with app.app_context():
-        try:
-            # Re-create temporary objects from the data for the mailer function
-            request_objects = [Request(**data) for data in requests_data]
-            if len(request_objects) > 1:
-                send_group_qr_email(request_objects)
-            elif len(request_objects) == 1 and request_objects[0].email:
-                send_visitor_qr_email(request_objects[0])
-        except Exception as e:
-            print(f"BACKGROUND EMAIL FAILED: {e}")
-        finally:
-            # This is crucial to close the session within the thread
-            db.session.remove()
 
 @bp.route("/request")
 @login_required
 def request_page():
     search_query = request.args.get("search_query", "").strip()
     filter_date_str = request.args.get("filter_date")
-
-    # Start with a query of ALL requests.
     query = Request.query
-
-    # Apply date filter ONLY if one is provided
     if filter_date_str:
         try:
             target_date = datetime.strptime(filter_date_str, "%Y-%m-%d").date()
             query = query.filter(db.func.date(db.func.timezone('Asia/Manila', Request.timestamp)) == target_date)
         except ValueError:
-            # This handles the 'Clear' case, so we don't filter by date
             pass
-    # ADDED BACK: If no date is in the URL, default the filter to today's date.
     elif filter_date_str is None:
         today = get_current_time().date()
         query = query.filter(db.func.date(db.func.timezone('Asia/Manila', Request.timestamp)) == today)
-
-    # Apply search filter if provided
     if search_query:
         query = query.filter(Request.name.ilike(f"%{search_query}%"))
-    
     all_matching_requests = query.order_by(Request.timestamp.desc()).all()
-
-    # Find out which of these visitors have a "Checked-In" log entry
     checked_in_codes = set()
     if all_matching_requests:
         unique_codes = [req.unique_code for req in all_matching_requests]
-        
-        subquery = db.session.query(
-            VisitorLog.unique_code,
-            db.func.max(VisitorLog.timestamp).label('max_timestamp')
-        ).filter(VisitorLog.unique_code.in_(unique_codes)).group_by(VisitorLog.unique_code).subquery()
-
-        checked_in_logs = db.session.query(VisitorLog.unique_code).join(
-            subquery,
-            db.and_(
-                VisitorLog.unique_code == subquery.c.unique_code,
-                VisitorLog.timestamp == subquery.c.max_timestamp
-            )
-        ).filter(VisitorLog.status == 'Checked-In').all()
-        
+        subquery = db.session.query(VisitorLog.unique_code, db.func.max(VisitorLog.timestamp).label('max_timestamp')).filter(VisitorLog.unique_code.in_(unique_codes)).group_by(VisitorLog.unique_code).subquery()
+        checked_in_logs = db.session.query(VisitorLog.unique_code).join(subquery, db.and_(VisitorLog.unique_code == subquery.c.unique_code, VisitorLog.timestamp == subquery.c.max_timestamp)).filter(VisitorLog.status == 'Checked-In').all()
         checked_in_codes = {log.unique_code for log in checked_in_logs}
-
-    # Re-create the grouping logic for the template
     grouped_requests = defaultdict(list)
     for req in all_matching_requests:
         if req.group_code:
             grouped_requests[req.group_code].append(req)
         else:
             grouped_requests[f"single-{req.id}"].append(req)
-
     return render_template(
         "Request.html",
         groups=grouped_requests,
@@ -134,48 +90,37 @@ def submit_request():
     db.session.add(new_request)
     db.session.commit()
 
-    # MODIFIED: Send simple data dictionary to the background thread
     if new_request.email:
-        request_data = [{
-            "name": new_request.name,
-            "email": new_request.email,
-            "unique_code": new_request.unique_code
-        }]
-        thread = Thread(target=send_email_in_background, args=[current_app._get_current_object(), request_data])
-        thread.start()
+        try:
+            send_visitor_qr_email(new_request)
+        except Exception as e:
+            print(f"Error sending email for {new_request.email}: {e}")
 
     socketio.emit('dashboard_update')
     socketio.emit('request_update')
     flash("You have been successfully registered! Please await check-in.", "success")
     return redirect(url_for('request_bp.online_reg'))
 
+
 @bp.route("/direct-checkin/<int:request_id>", methods=["POST"])
 @login_required
 def direct_checkin(request_id):
     req = Request.query.get_or_404(request_id)
+    log_exists = VisitorLog.query.filter_by(unique_code=req.unique_code, status="Checked-In").first()
+    if log_exists and log_exists.timestamp.astimezone(pytz.timezone('Asia/Manila')).date() == get_current_time().date():
+        flash(f"{req.name} is already checked in.", "warning")
+        return redirect(url_for('request_bp.request_page'))
     visitor = Visitor.query.filter_by(name=req.name, number=req.number).first()
     if not visitor:
         visitor = Visitor(name=req.name, email=req.email, number=req.number, qr_code=req.unique_code, last_purpose=req.purpose, last_address=req.address)
         db.session.add(visitor)
-        db.session.commit()
     else:
         visitor.last_purpose = req.purpose
         visitor.last_address = req.address
-    last_log = VisitorLog.query.filter_by(visitor_id=visitor.id).order_by(VisitorLog.timestamp.desc()).first()
-    is_already_checked_in = False
-    if last_log and last_log.status == "Checked-In":
-        manila_tz = pytz.timezone('Asia/Manila')
-        now_manila = get_current_time()
-        if last_log.timestamp.astimezone(manila_tz).date() == now_manila.date():
-            is_already_checked_in = True
-    if not is_already_checked_in:
-        new_log = VisitorLog(visitor_id=visitor.id, name=visitor.name, email=visitor.email, number=visitor.number, purpose=req.purpose, address=req.address, status="Checked-In", unique_code=req.unique_code, visit_session_id=str(uuid.uuid4()), timestamp=datetime.utcnow(), check_in_by_id=current_user.id, check_in_gate=current_user.gate_role, approved_by_id=current_user.id)
-        db.session.add(new_log)
-        flash(f"{visitor.name} has been checked in.", "success")
-    else:
-        flash(f"{visitor.name} was already checked in today.", "info")
-    req.status = "Completed"
+    new_log = VisitorLog(visitor_id=visitor.id, name=visitor.name, email=visitor.email, number=visitor.number, purpose=req.purpose, address=req.address, status="Checked-In", unique_code=req.unique_code, visit_session_id=str(uuid.uuid4()), timestamp=datetime.utcnow(), check_in_by_id=current_user.id, check_in_gate=current_user.gate_role, approved_by_id=current_user.id)
+    db.session.add(new_log)
     db.session.commit()
+    flash(f"{visitor.name} has been checked in.", "success")
     socketio.emit('dashboard_update')
     socketio.emit('request_update')
     return redirect(url_for('request_bp.request_page'))
@@ -186,26 +131,21 @@ def direct_checkin_group(group_code):
     group_requests = Request.query.filter_by(group_code=group_code, status="Approve").all()
     checked_in_count = 0
     for req in group_requests:
+        log_exists = VisitorLog.query.filter_by(unique_code=req.unique_code, status="Checked-In").first()
+        if log_exists and log_exists.timestamp.astimezone(pytz.timezone('Asia/Manila')).date() == get_current_time().date():
+            continue
         visitor = Visitor.query.filter_by(name=req.name, number=req.number).first()
         if not visitor:
             visitor = Visitor(name=req.name, email=req.email, number=req.number, qr_code=req.unique_code, last_purpose=req.purpose, last_address=req.address)
             db.session.add(visitor)
-            db.session.commit()
         else:
             visitor.last_purpose = req.purpose
             visitor.last_address = req.address
-        last_log = VisitorLog.query.filter_by(visitor_id=visitor.id).order_by(VisitorLog.timestamp.desc()).first()
-        is_already_checked_in = False
-        if last_log and last_log.status == "Checked-In":
-            if last_log.timestamp.astimezone(pytz.timezone('Asia/Manila')).date() == get_current_time().date():
-                is_already_checked_in = True
-        if not is_already_checked_in:
-            new_log = VisitorLog(visitor_id=visitor.id, name=visitor.name, email=visitor.email, number=visitor.number, purpose=req.purpose, address=req.address, status="Checked-In", unique_code=req.unique_code, visit_session_id=str(uuid.uuid4()), timestamp=datetime.utcnow(), check_in_by_id=current_user.id, check_in_gate=current_user.gate_role, approved_by_id=current_user.id)
-            db.session.add(new_log)
-            checked_in_count += 1
-        req.status = "Completed"
+        new_log = VisitorLog(visitor_id=visitor.id, name=visitor.name, email=visitor.email, number=visitor.number, purpose=req.purpose, address=req.address, status="Checked-In", unique_code=req.unique_code, visit_session_id=str(uuid.uuid4()), timestamp=datetime.utcnow(), check_in_by_id=current_user.id, check_in_gate=current_user.gate_role, approved_by_id=current_user.id)
+        db.session.add(new_log)
+        checked_in_count += 1
     db.session.commit()
-    flash(f"{checked_in_count} members of group {group_code} have been checked in.", "success")
+    flash(f"{checked_in_count} new members of group {group_code} have been checked in.", "success")
     socketio.emit('dashboard_update')
     socketio.emit('request_update')
     return redirect(url_for('request_bp.request_page'))
@@ -243,19 +183,10 @@ def multi_form_entry():
         if created_requests:
             db.session.add_all(created_requests)
             db.session.commit()
-            
-            # MODIFIED: Create a list of simple data dictionaries
-            requests_data = [{
-                "name": req.name,
-                "email": req.email,
-                "unique_code": req.unique_code,
-                "group_code": req.group_code
-            } for req in created_requests if req.email]
-            
-            if requests_data:
-                thread = Thread(target=send_email_in_background, args=[current_app._get_current_object(), requests_data])
-                thread.start()
-
+            try:
+                send_group_qr_email(created_requests)
+            except Exception as e:
+                print(f"Error sending group email for multi-form: {e}")
             socketio.emit('request_update')
             flash(f"{len(created_requests)} visitors successfully registered!", "success")
         return redirect(url_for('request_bp.multi_form_entry'))
@@ -294,19 +225,10 @@ def upload_csv():
     if created_requests:
         db.session.add_all(created_requests)
         db.session.commit()
-
-        # MODIFIED: Create a list of simple data dictionaries
-        requests_data = [{
-            "name": req.name,
-            "email": req.email,
-            "unique_code": req.unique_code,
-            "group_code": req.group_code
-        } for req in created_requests if req.email]
-
-        if requests_data:
-            thread = Thread(target=send_email_in_background, args=[current_app._get_current_object(), requests_data])
-            thread.start()
-
+        try:
+            send_group_qr_email(created_requests)
+        except Exception as e:
+            print(f"Error sending group email for CSV upload: {e}")
         socketio.emit("request_update")
         flash(f"{len(created_requests)} requests uploaded successfully!", "success")
     else:
