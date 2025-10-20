@@ -1,7 +1,7 @@
 # app/routes/request.py
 # This version sends emails directly (synchronously) without using background threads.
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, session
 from flask_login import current_user, login_required
 from app.models import db, Request, Visitor, VisitorLog
 from app.utils.helpers import generate_unique_secure_code, get_current_time
@@ -22,6 +22,16 @@ bp = Blueprint('request_bp', __name__)
 def request_page():
     search_query = request.args.get("search_query", "").strip()
     filter_date_str = request.args.get("filter_date")
+    # Get the page number from URL arguments, default to 1
+    page = request.args.get('page', 1, type=int)
+    
+    # --- ADDED: LOGIC TO REMEMBER PER_PAGE SETTING ---
+    per_page_from_request = request.args.get("per_page")
+    if per_page_from_request:
+        session['per_page'] = int(per_page_from_request)
+    per_page = session.get('per_page', 10)
+    # --- END OF ADDED LOGIC ---
+
     query = Request.query
     if filter_date_str:
         try:
@@ -32,27 +42,35 @@ def request_page():
     elif filter_date_str is None:
         today = get_current_time().date()
         query = query.filter(db.func.date(db.func.timezone('Asia/Manila', Request.timestamp)) == today)
+    
     if search_query:
         query = query.filter(Request.name.ilike(f"%{search_query}%"))
-    all_matching_requests = query.order_by(Request.timestamp.desc()).all()
+    
+    # MODIFIED: Use paginate() instead of all()
+    pagination = query.order_by(Request.timestamp.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    all_matching_requests = pagination.items
+
     checked_in_codes = set()
     if all_matching_requests:
         unique_codes = [req.unique_code for req in all_matching_requests]
         subquery = db.session.query(VisitorLog.unique_code, db.func.max(VisitorLog.timestamp).label('max_timestamp')).filter(VisitorLog.unique_code.in_(unique_codes)).group_by(VisitorLog.unique_code).subquery()
         checked_in_logs = db.session.query(VisitorLog.unique_code).join(subquery, db.and_(VisitorLog.unique_code == subquery.c.unique_code, VisitorLog.timestamp == subquery.c.max_timestamp)).filter(VisitorLog.status == 'Checked-In').all()
         checked_in_codes = {log.unique_code for log in checked_in_logs}
+
     grouped_requests = defaultdict(list)
     for req in all_matching_requests:
         if req.group_code:
             grouped_requests[req.group_code].append(req)
         else:
             grouped_requests[f"single-{req.id}"].append(req)
+
     return render_template(
         "Request.html",
         groups=grouped_requests,
         checked_in_codes=checked_in_codes,
         search_query=search_query,
-        filter_date=filter_date_str
+        filter_date=filter_date_str,
+        pagination=pagination  # Pass the pagination object to the template
     )
 
 @bp.route("/Visitor-register-form")
@@ -106,18 +124,37 @@ def submit_request():
 @login_required
 def direct_checkin(request_id):
     req = Request.query.get_or_404(request_id)
-    log_exists = VisitorLog.query.filter_by(unique_code=req.unique_code, status="Checked-In").first()
-    if log_exists and log_exists.timestamp.astimezone(pytz.timezone('Asia/Manila')).date() == get_current_time().date():
+
+    # Use the most recent log for this unique_code to determine current state
+    last_log = VisitorLog.query.filter_by(unique_code=req.unique_code).order_by(VisitorLog.timestamp.desc()).first()
+    if last_log and last_log.status == "Checked-In" and last_log.timestamp.astimezone(pytz.timezone('Asia/Manila')).date() == get_current_time().date():
         flash(f"{req.name} is already checked in.", "warning")
         return redirect(url_for('request_bp.request_page'))
+
     visitor = Visitor.query.filter_by(name=req.name, number=req.number).first()
     if not visitor:
         visitor = Visitor(name=req.name, email=req.email, number=req.number, qr_code=req.unique_code, last_purpose=req.purpose, last_address=req.address)
         db.session.add(visitor)
+        db.session.flush()  # ensure visitor.id is populated before using it
     else:
         visitor.last_purpose = req.purpose
         visitor.last_address = req.address
-    new_log = VisitorLog(visitor_id=visitor.id, name=visitor.name, email=visitor.email, number=visitor.number, purpose=req.purpose, address=req.address, status="Checked-In", unique_code=req.unique_code, visit_session_id=str(uuid.uuid4()), timestamp=datetime.utcnow(), check_in_by_id=current_user.id, check_in_gate=current_user.gate_role, approved_by_id=current_user.id)
+
+    new_log = VisitorLog(
+        visitor_id=visitor.id,
+        name=visitor.name,
+        email=visitor.email,
+        number=visitor.number,
+        purpose=req.purpose,
+        address=req.address,
+        status="Checked-In",
+        unique_code=req.unique_code,
+        visit_session_id=str(uuid.uuid4()),
+        timestamp=datetime.utcnow(),
+        check_in_by_id=current_user.id,
+        check_in_gate=current_user.gate_role,
+        approved_by_id=current_user.id
+    )
     db.session.add(new_log)
     db.session.commit()
     flash(f"{visitor.name} has been checked in.", "success")
@@ -128,22 +165,39 @@ def direct_checkin(request_id):
 @bp.route("/direct-checkin-group/<group_code>", methods=["POST"])
 @login_required
 def direct_checkin_group(group_code):
-    group_requests = Request.query.filter_by(group_code=group_code, status="Approve").all()
+    # This now finds all requests for the group, regardless of status, to ensure it works
+    group_requests = Request.query.filter_by(group_code=group_code).all()
     checked_in_count = 0
     for req in group_requests:
-        log_exists = VisitorLog.query.filter_by(unique_code=req.unique_code, status="Checked-In").first()
-        if log_exists and log_exists.timestamp.astimezone(pytz.timezone('Asia/Manila')).date() == get_current_time().date():
-            continue
+        # Use the exact same logic as the single check-in
+        last_log = VisitorLog.query.filter_by(unique_code=req.unique_code).order_by(VisitorLog.timestamp.desc()).first()
+        if last_log and last_log.status == "Checked-In" and last_log.timestamp.astimezone(pytz.timezone('Asia/Manila')).date() == get_current_time().date():
+            continue # Skip if already checked in today
+
+        # Find or create visitor by name and number for reliability
         visitor = Visitor.query.filter_by(name=req.name, number=req.number).first()
         if not visitor:
-            visitor = Visitor(name=req.name, email=req.email, number=req.number, qr_code=req.unique_code, last_purpose=req.purpose, last_address=req.address)
+            visitor = Visitor(
+                name=req.name, email=req.email, number=req.number,
+                qr_code=req.unique_code, last_purpose=req.purpose, last_address=req.address
+            )
             db.session.add(visitor)
+            db.session.flush()
         else:
             visitor.last_purpose = req.purpose
             visitor.last_address = req.address
-        new_log = VisitorLog(visitor_id=visitor.id, name=visitor.name, email=visitor.email, number=visitor.number, purpose=req.purpose, address=req.address, status="Checked-In", unique_code=req.unique_code, visit_session_id=str(uuid.uuid4()), timestamp=datetime.utcnow(), check_in_by_id=current_user.id, check_in_gate=current_user.gate_role, approved_by_id=current_user.id)
+
+        new_log = VisitorLog(
+            visitor_id=visitor.id, name=visitor.name, email=visitor.email,
+            number=visitor.number, purpose=req.purpose, address=req.address,
+            status="Checked-In", unique_code=req.unique_code,
+            visit_session_id=str(uuid.uuid4()), timestamp=datetime.utcnow(),
+            check_in_by_id=current_user.id, check_in_gate=current_user.gate_role,
+            approved_by_id=current_user.id
+        )
         db.session.add(new_log)
         checked_in_count += 1
+    
     db.session.commit()
     flash(f"{checked_in_count} new members of group {group_code} have been checked in.", "success")
     socketio.emit('dashboard_update')
@@ -155,42 +209,66 @@ def direct_checkin_group(group_code):
 @csrf.exempt
 def multi_form_entry():
     if request.method == 'POST':
+        created = []
         idx = 1
-        group_code = secrets.token_urlsafe(12)
-        created_requests = []
+        # iterate through contiguous visitor forms: first_name_1, first_name_2, ...
         while True:
-            first_name = request.form.get(f'first_name_{idx}')
-            if not first_name: break
-            last_name = request.form.get(f'last_name_{idx}')
-            middle_initial = request.form.get(f'middle_initial_{idx}')
-            phone = request.form.get(f'phone_{idx}')
-            email = request.form.get(f'email_{idx}')
-            no_email = request.form.get(f'no_email_{idx}')
-            purpose = request.form.get(f'purpose_{idx}')
-            other_purpose = request.form.get(f'other_purpose_{idx}')
-            address = request.form.get(f'address_{idx}')
-            final_purpose = other_purpose if purpose == 'Other' else purpose
-            full_name = f"{first_name} {middle_initial or ''} {last_name}".strip()
-            email = "" if no_email else (email or "").strip()
+            first = request.form.get(f"first_name_{idx}", "").strip()
+            if not first:
+                break
+            middle_raw = request.form.get(f"middle_initial_{idx}", "").strip()
+            middle = (middle_raw[0].upper() + ".") if middle_raw else ""
+            last = request.form.get(f"last_name_{idx}", "").strip()
+            phone = request.form.get(f"phone_{idx}", "").strip()
+            no_email = request.form.get(f"no_email_{idx}")
+            email = "" if no_email else request.form.get(f"email_{idx}", "").strip()
+            purpose = request.form.get(f"purpose_{idx}", "").strip()
+            if purpose == "Other":
+                other = request.form.get(f"other_purpose_{idx}", "").strip()
+                if other:
+                    purpose = other
+            address = request.form.get(f"address_{idx}", "").strip()
+
+            # basic validation: require first, last, phone, purpose, address
+            if not all([first, last, phone, purpose, address]):
+                idx += 1
+                continue
+
+            full_name = f"{first} {middle+' ' if middle else ''}{last}".strip()
             unique_code = generate_unique_secure_code()
             new_request = Request(
-                name=full_name, email=email, number=phone, purpose=final_purpose,
-                address=address, unique_code=unique_code, status="Approve",
-                timestamp=datetime.utcnow(), group_code=group_code
+                name=full_name,
+                email=email,
+                number=phone,
+                purpose=purpose,
+                address=address,
+                unique_code=unique_code,
+                status="Approve",
+                timestamp=datetime.utcnow()
             )
-            created_requests.append(new_request)
+            db.session.add(new_request)
+            created.append(new_request)
             idx += 1
-        if created_requests:
-            db.session.add_all(created_requests)
+
+        if created:
+            # If more than one visitor submitted together, assign a shared group_code
+            if len(created) > 1:
+                group_code = generate_unique_secure_code()
+                for r in created:
+                    r.group_code = group_code
             db.session.commit()
-            try:
-                send_group_qr_email(created_requests)
-            except Exception as e:
-                print(f"Error sending group email for multi-form: {e}")
+            socketio.emit('dashboard_update')
             socketio.emit('request_update')
-            flash(f"{len(created_requests)} visitors successfully registered!", "success")
-        return redirect(url_for('request_bp.multi_form_entry'))
-    return render_template('Multi-form-entry.html')
+            flash(f"{len(created)} visitor(s) registered. Please await check-in.", "success")
+            return redirect(url_for('request_bp.multi_form_entry'))
+        else:
+            flash("No valid visitor entries submitted.", "danger")
+            return redirect(url_for('request_bp.multi_form_entry'))
+
+
+    return render_template("Multi-form-entry.html")
+
+
 
 @bp.route("/upload_csv", methods=["POST"])
 @csrf.exempt

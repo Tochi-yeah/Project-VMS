@@ -75,8 +75,18 @@
             <button type="submit" class="submit-btn">Register All</button>
         </form>
             <a href="{{ url_for('request_bp.online_reg') }}" class="back-to-login">Go Back to Single Registration?</a>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% set category, message = messages[-1] %}
+                <div id="flash-message" data-message="{{ message }}" data-category="{{ category }}"></div>
+              {% endif %}
+            {% endwith %}
+
         </div>
     </div>
+
+    <div id="toast-notification" class="toast"></div>
 
 <script>
 function updateVisitorLabels() {
@@ -193,6 +203,22 @@ document.querySelector('.add-btn').addEventListener('click', function() {
     setupVisitorFormEvents(newForm);
     updateVisitorLabels();
 });
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const flashElement = document.getElementById("flash-message");
+        if (flashElement) {
+            const message = flashElement.dataset.message;
+            const toast = document.getElementById("toast-notification");
+            toast.textContent = message;
+            toast.classList.add("show");
+
+            setTimeout(function () {
+              toast.classList.remove("show");
+            }, 3500); // toast visible for 3.5 seconds
+        }
+    });
 </script>
 
 </body>

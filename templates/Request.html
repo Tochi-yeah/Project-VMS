@@ -28,6 +28,12 @@
 
       <div class="filter-container animate-in">
         <form method="GET" action="{{ url_for('request_bp.request_page') }}" class="filter-form">
+          <select name="per_page" onchange="this.form.submit()">
+            <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+            <option value="25" {% if per_page == 25 %}selected{% endif %}>25</option>
+            <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+            <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+          </select>
           <div class="search-input-wrapper">
             <i class="fas fa-search"></i>
             <input type="text" name="search_query" placeholder="Search by name..." value="{{ search_query or '' }}">
@@ -78,7 +84,7 @@
                 {% for group_code, group_requests in groups.items() %}
                   {% if group_requests|length > 1 %}
                     <tr class="group-row animate-in" data-group="{{ group_code }}">
-                      <td>{{ loop.index }}</td>
+                      <td>{{ loop.index + pagination.per_page * (pagination.page - 1) }}</td>
                       <td colspan="5"><strong>Group Request</strong> ({{ group_requests|length }} members)</td>
                       <td><code>{{ group_code }}</code></td>
                       <td>
@@ -103,7 +109,7 @@
                   {% else %}
                     {% set request = group_requests[0] %}
                     <tr class="animate-in">
-                      <td>{{ loop.index }}</td>
+                      <td>{{ loop.index + pagination.per_page * (pagination.page - 1) }}</td>
                       <td>{{ request.name }}</td>
                       <td>{{ request.email }}</td>
                       <td>{{ request.number }}</td>
@@ -132,7 +138,40 @@
               {% endif %}
             </tbody>
           </table>
+        </div> 
+        
+        {% if pagination and pagination.pages > 1 %}
+        <div class="pagination-container animate-in">
+          <nav aria-label="Logs pagination">
+            <ul class="pagination-list">
+              <li class="pagination-item">
+                <!-- MODIFIED: Added per_page to all links -->
+                <a class="pagination-link" href="{{ url_for('request_bp.request_page', page=1, filter_date=filter_date, search_query=search_query, per_page=per_page) }}">
+                  <i class="fas fa-angle-double-left"></i> First
+                </a>
+              </li>
+              <li class="pagination-item">
+                <a class="pagination-link" href="{{ url_for('request_bp.request_page', page=pagination.prev_num if pagination.has_prev else 1, filter_date=filter_date, search_query=search_query, per_page=per_page) }}">
+                  <i class="fas fa-angle-left"></i> Prev
+                </a>
+              </li>
+              <li class="pagination-item pagination-current">
+                Page {{ pagination.page }} of {{ pagination.pages }}
+              </li>
+              <li class="pagination-item">
+                <a class="pagination-link" href="{{ url_for('request_bp.request_page', page=pagination.next_num if pagination.has_next else pagination.pages, filter_date=filter_date, search_query=search_query, per_page=per_page) }}">
+                  Next <i class="fas fa-angle-right"></i>
+                </a>
+              </li>
+              <li class="pagination-item">
+                <a class="pagination-link" href="{{ url_for('request_bp.request_page', page=pagination.pages, filter_date=filter_date, search_query=search_query, per_page=per_page) }}">
+                  Last <i class="fas fa-angle-double-right"></i>
+                </a>
+              </li>
+            </ul>
+          </nav>
         </div>
+        {% endif %}
       </div>
 
       <div class="scanner-section animate-in">

@@ -1,6 +1,6 @@
 # app/routes/main.py
 import os
-from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app
+from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app, session
 from flask_login import current_user, login_required
 from app.models import VisitorLog, Request, db, User, Visitor
 from werkzeug.utils import secure_filename
@@ -112,7 +112,13 @@ def logs():
     filter_date = request.args.get("filter_date")
     search_query = request.args.get("search_query", "").strip()
     page = request.args.get("page", 1, type=int)
-    per_page = request.args.get("per_page", 10, type=int)
+    
+    # --- ADDED: LOGIC TO REMEMBER PER_PAGE SETTING ---
+    per_page_from_request = request.args.get("per_page")
+    if per_page_from_request:
+        session['per_page'] = int(per_page_from_request)
+    per_page = session.get('per_page', 10)
+    # --- END OF ADDED LOGIC ---
 
     now_manila = get_current_time()
 

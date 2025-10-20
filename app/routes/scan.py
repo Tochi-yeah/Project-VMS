@@ -1,8 +1,6 @@
-# app/routes/scan.py
-
 from flask import Blueprint, request, jsonify
 from flask_login import current_user
-from app.models import db, VisitorLog, Request, Visitor  
+from app.models import db, VisitorLog, Request, Visitor
 from app import csrf
 from app import socketio
 from datetime import datetime
@@ -31,45 +29,50 @@ def scan_checkin():
     manila_tz = pytz.timezone('Asia/Manila')
     today = get_current_time().date()
 
-    # --- FINALIZED LOGIC ---
-
-    # 1. Handle check-in confirmation from the modal
+    # 1) Modal submission: user confirmed purpose -> perform check-in / check-out accordingly
     if purpose_from_modal is not None:
+        # accept single requests whether still "Approve" or already "Completed"
+        req = Request.query.filter(Request.unique_code == code, Request.status.in_(["Approve", "Completed"])).first()
         visitor = Visitor.query.filter_by(qr_code=code).first()
-        req = Request.query.filter_by(unique_code=code).first()
-        
+
         target_visitor = visitor or (req and _find_or_create_visitor(req))
-        
+
         if not target_visitor:
             return jsonify({"message": "Code not recognized."}), 404
-        
+
+        # update last purpose and mark request completed if it came from a request
         target_visitor.last_purpose = purpose_from_modal
-        if req and req.status == "Approve":
+        if req:
             req.status = "Completed"
         db.session.commit()
-        
+
         action = _process_single_visitor(target_visitor, code, approved_by_id=current_user.id)
         return jsonify({"message": f"{target_visitor.name} {action}."})
 
-    # 2. Handle initial scan to determine the correct action
-    
-    # Check for a permanent visitor first. This covers returning visitors AND all check-outs.
+    # 2) Initial scan: decide whether to show modal or immediately check-out
+
+    # If it's a permanent visitor record
     visitor = Visitor.query.filter_by(qr_code=code).first()
     if visitor:
-        last_log = VisitorLog.query.filter_by(visitor_id=visitor.id, status="Checked-In").order_by(VisitorLog.timestamp.desc()).first()
-        if last_log and last_log.timestamp.astimezone(manila_tz).date() == today:
+        # look at the latest log entry (any status) to determine current state
+        last_entry = VisitorLog.query.filter_by(visitor_id=visitor.id) \
+                                     .order_by(VisitorLog.timestamp.desc()).first()
+        # If latest entry is Checked-In and it's today -> this is a CHECK-OUT, process immediately
+        if last_entry and last_entry.status == "Checked-In" and last_entry.timestamp.astimezone(manila_tz).date() == today:
             action = _process_single_visitor(visitor, code)
             return jsonify({"message": f"{visitor.name} {action}."})
-        else:
-            return jsonify({"action": "show_modal", "name": visitor.name, "purpose": visitor.last_purpose or ""})
+        # Otherwise ALWAYS show the purpose modal for individual check-ins (allows changing purpose)
+        return jsonify({"action": "show_modal", "name": visitor.name, "purpose": visitor.last_purpose or ""})
 
-    # If not a permanent visitor, check for a new individual registration.
-    req = Request.query.filter_by(unique_code=code, status="Approve").first()
+    # If not a permanent visitor, check for an individual registration (single request)
+    # Accept both "Approve" and "Completed" so previously completed single requests still prompt modal
+    req = Request.query.filter(Request.unique_code == code, Request.status.in_(["Approve", "Completed"])).first()
     if req:
+        # ensure permanent visitor exists (so modal has a visitor record to update), but still show modal
         _find_or_create_visitor(req)
-        return jsonify({"action": "show_modal", "name": req.name, "purpose": req.purpose})
+        return jsonify({"action": "show_modal", "name": req.name, "purpose": req.purpose or ""})
 
-    # Check for a group code (both check-in and check-out).
+    # Check for a group code (group check-in/check-out). Group behavior unchanged.
     group_requests = Request.query.filter(Request.group_code == code, Request.status.in_(["Approve", "Completed"])).all()
     if group_requests:
         any_checked_in = False
@@ -77,23 +80,27 @@ def scan_checkin():
         for r in group_requests:
             v = _find_or_create_visitor(r)
             visitors_in_group.append(v)
-            last_log = VisitorLog.query.filter_by(visitor_id=v.id, status="Checked-In").order_by(VisitorLog.timestamp.desc()).first()
-            if last_log and last_log.timestamp.astimezone(manila_tz).date() == today:
+            last_entry = VisitorLog.query.filter_by(visitor_id=v.id) \
+                                         .order_by(VisitorLog.timestamp.desc()).first()
+            if last_entry and last_entry.status == "Checked-In" and last_entry.timestamp.astimezone(manila_tz).date() == today:
                 any_checked_in = True
-        
+
         results = []
         if any_checked_in:
+            # check everyone out (no modal)
             for v in visitors_in_group:
                 _process_single_visitor(v, v.qr_code, commit=False)
                 results.append(f"{v.name}: Checked-Out")
         else:
+            # check everyone in (group flow remains automated)
             for r in group_requests:
                 v = _find_or_create_visitor(r)
                 _process_single_visitor(v, r.unique_code, approved_by_id=r.approved_by_id, commit=False)
                 r.status = "Completed"
                 results.append(f"{v.name}: Checked-In")
+
         db.session.commit()
-        socketio.emit('dashboard_update'); socketio.emit('request_update')
+        socketio.emit('dashboard_update')
         return jsonify({"message": f"Group {code} processed", "details": results})
 
     return jsonify({"message": "QR code or unique code not recognized."}), 404
@@ -111,9 +118,10 @@ def _find_or_create_visitor(req):
             last_address=getattr(req, "address", None)
         )
         db.session.add(visitor)
+        db.session.commit()
     elif visitor.qr_code != req.unique_code:
         visitor.qr_code = req.unique_code
-    db.session.commit()
+        db.session.commit()
     return visitor
 
 
@@ -166,6 +174,5 @@ def _process_single_visitor(visitor, used_code, approved_by_id=None, commit=True
     if commit:
         db.session.commit()
         socketio.emit('dashboard_update')
-        socketio.emit('request_update')
 
     return action
