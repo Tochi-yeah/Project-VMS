@@ -257,6 +257,15 @@ def multi_form_entry():
                 for r in created:
                     r.group_code = group_code
             db.session.commit()
+
+            # Send emails for each created request (same behavior as single registration)
+            for r in created:
+                if r.email:
+                    try:
+                        send_visitor_qr_email(r)
+                    except Exception as e:
+                        print(f"Error sending email for {r.email}: {e}")
+
             socketio.emit('dashboard_update')
             socketio.emit('request_update')
             flash(f"{len(created)} visitor(s) registered. Please await check-in.", "success")
@@ -267,8 +276,6 @@ def multi_form_entry():
 
 
     return render_template("Multi-form-entry.html")
-
-
 
 @bp.route("/upload_csv", methods=["POST"])
 @csrf.exempt
