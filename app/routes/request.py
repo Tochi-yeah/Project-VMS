@@ -211,11 +211,9 @@ def multi_form_entry():
     if request.method == 'POST':
         created = []
         idx = 1
-        # iterate through contiguous visitor forms: first_name_1, first_name_2, ...
         while True:
             first = request.form.get(f"first_name_{idx}", "").strip()
-            if not first:
-                break
+            if not first: break
             middle_raw = request.form.get(f"middle_initial_{idx}", "").strip()
             middle = (middle_raw[0].upper() + ".") if middle_raw else ""
             last = request.form.get(f"last_name_{idx}", "").strip()
@@ -225,47 +223,30 @@ def multi_form_entry():
             purpose = request.form.get(f"purpose_{idx}", "").strip()
             if purpose == "Other":
                 other = request.form.get(f"other_purpose_{idx}", "").strip()
-                if other:
-                    purpose = other
+                if other: purpose = other
             address = request.form.get(f"address_{idx}", "").strip()
-
-            # basic validation: require first, last, phone, purpose, address
             if not all([first, last, phone, purpose, address]):
                 idx += 1
                 continue
-
             full_name = f"{first} {middle+' ' if middle else ''}{last}".strip()
             unique_code = generate_unique_secure_code()
             new_request = Request(
-                name=full_name,
-                email=email,
-                number=phone,
-                purpose=purpose,
-                address=address,
-                unique_code=unique_code,
-                status="Approve",
-                timestamp=datetime.utcnow()
+                name=full_name, email=email, number=phone, purpose=purpose, address=address,
+                unique_code=unique_code, status="Approve", timestamp=datetime.utcnow()
             )
             db.session.add(new_request)
             created.append(new_request)
             idx += 1
-
         if created:
-            # If more than one visitor submitted together, assign a shared group_code
             if len(created) > 1:
                 group_code = generate_unique_secure_code()
                 for r in created:
                     r.group_code = group_code
             db.session.commit()
-
-            # Send emails for each created request (same behavior as single registration)
-            for r in created:
-                if r.email:
-                    try:
-                        send_visitor_qr_email(r)
-                    except Exception as e:
-                        print(f"Error sending email for {r.email}: {e}")
-
+            if len(created) > 1:
+                send_group_qr_email(created)
+            else:
+                send_visitor_qr_email(created[0])
             socketio.emit('dashboard_update')
             socketio.emit('request_update')
             flash(f"{len(created)} visitor(s) registered. Please await check-in.", "success")
@@ -273,8 +254,6 @@ def multi_form_entry():
         else:
             flash("No valid visitor entries submitted.", "danger")
             return redirect(url_for('request_bp.multi_form_entry'))
-
-
     return render_template("Multi-form-entry.html")
 
 @bp.route("/upload_csv", methods=["POST"])
