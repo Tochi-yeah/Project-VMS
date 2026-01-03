@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VMS Analytics</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/Analytic.css') }}">    
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+</head>
+<body>
+
+   {% extends 'base.html' %}
+
+   {% block title %}Request{% endblock %}
+
+   {% block content %}
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Header -->
+    <header class="header">
+      <h1 class="header-title">Analytics Overview</h1>
+      {% include 'includes/user_menu.html' %}
+    </header>
+
+    <!-- Chart Control -->
+    <div class="chart-controls animate-in">
+      <div class="time-range-buttons">
+        <button class="time-range-btn active" data-range="7">Last 7 Days</button>
+        <button class="time-range-btn" data-range="30">Last 30 Days</button>
+      </div>
+      <div class="date-picker">
+        <input type="date" id="start-date" class="date-input" />
+        <input type="date" id="end-date" class="date-input" />
+        <button class="apply-btn">Apply</button>
+      </div>
+    </div>
+
+
+
+    <!-- Analytics Content -->
+    <main class="chart-section">
+      <div class="chart-card animate-in">
+        <h2 class="chart-title">Visitor Trend Over Time</h2>
+        <div class="filter-desc" id="trend-filter-desc"></div>
+        <div id="timeline-chart" class="chart-container"></div>
+        <button class="download-btn" id="download-timeline-chart">Download</button>
+      </div>
+      <div class="chart-card animate-in">
+        <h2 class="chart-title">Top Visitors</h2>
+        <div class="filter-desc" id="top-visitor-filter-desc"></div>
+        <div id="visitor-chart" class="chart-container"></div>
+        <button class="download-btn" id="download-top-visitor-chart">Download</button>
+      </div>
+      <div class="chart-card animate-in">
+        <h2 class="chart-title">Visitor Duration</h2>
+        <div class="filter-desc" id="duration-filter-desc"></div>
+        <div id="duration-chart" class="chart-container"></div> 
+        <button class="download-btn" id="download-duration-chart">Download</button>
+      </div>
+      <div class="chart-card animate-in">
+        <h2 class="chart-title">Purpose Distribution</h2>
+        <div class="filter-desc" id="purpose-filter-desc" ></div>
+        <div id="purpose-chart" class="chart-container"></div>
+        <button class="download-btn" id="download-purpose-chart">Download</button>
+      </div>
+      <div class="chart-card animate-in">
+        <h2 class="chart-title">Approved and Rejected Requests</h2>
+        <div class="filter-desc" id="request-filter-desc"></div>
+        <div id="request-chart" class="chart-container"></div>
+        <button class="download-btn" id="download-request-chart">Download</button>
+      </div>
+
+  <script src="{{ url_for('static', filename='js/Chart/Control.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/Chart/visitorTrendChart.js') }}"defer></script>
+  <script src="{{ url_for('static', filename='js/Chart/topVisitorChart.js') }}"defer></script>
+  <script src="{{ url_for('static', filename='js/Chart/purposeChart.js') }}"defer></script>
+  <script src="{{ url_for('static', filename='js/Chart/durationChart.js') }}"defer></script>
+  <script src="{{ url_for('static', filename='js/Chart/approveRejectchart.js') }}"defer></script>
+  <script src="{{ url_for('static', filename='js/Chart/downloadCharts.js') }}" defer></script>
+  {% endblock %}
+</body>
+</html>

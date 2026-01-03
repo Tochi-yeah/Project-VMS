@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VMS Setting</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/Setting.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+</head>
+<body data-default-tab="{{ active_tab | default('settings') }}">
+
+{% extends 'base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+
+
+  <div class="main-content">
+    <header class="header">
+      <h1 class="header-title">Settings</h1>
+      {% include 'includes/user_menu.html' %}
+    </header>
+
+    <div class="settings-content">
+      <nav class="settings-nav">
+        <ul>
+          <li>
+            <a href="#" class="tab-link active" data-tab="profile">
+              <i class="fas fa-user"></i>
+              Profile
+            </a>
+          </li>
+          {% if current_user.two_factor_enabled and qr_base64 and secret %}
+          <li>
+            <a href="#" class="tab-link" data-tab="2fa-setup">
+              <i class="fas fa-qrcode"></i>
+              2FA Setup
+            </a>
+          </li>
+          {% endif %}
+          {% if current_user.role == 'admin' %}
+          <li>
+            <a href="#" class="tab-link" data-tab="create-account">
+              <i class="fas fa-user-plus"></i>
+              Create Account
+            </a>
+          </li>
+          {% endif %}
+        </ul>
+      </nav>
+
+      <div class="settings-container">
+        <div class="settings-section active" id="profile-section">
+          <div class="settings-card animate-in">
+            <div class="card-header">
+              <h2 class="card-title">
+                <i class="fas fa-user-circle"></i>
+                Profile Settings
+              </h2>
+              <p class="card-subtitle">Manage your account information and security preferences</p>
+            </div>
+            
+            <div class="card-content">
+              <div class="profile-header">
+                <div class="profile-avatar">
+                  <div class="current-profile-img">
+                    {% if current_user.profile_picture %}
+                      <img src="{{ url_for('static', filename='profile_pics/' ~ current_user.profile_picture) }}" alt="Profile Picture">
+                    {% else %}
+                          <img src="{{ url_for('static', filename='images/icc-balayan.jpg') }}" alt="Profile" class="user-avatar">
+                    {% endif %}
+                  </div>
+            
+                </div>
+                <div class="profile-info">
+                  <h3>{{ current_user.username }}</h3>
+                  <p>{{ current_user.email }}</p>
+                  <div class="profile-badges">
+                    <span class="badge role">{{ current_user.role }}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <form class="user-info-form" method="POST" action="{{ url_for('profile.update_profile') }}" enctype="multipart/form-data">
+                <div class="form-grid">
+                  
+                  <div class="form-group">
+                    <label class="form-label" for="profile-picture">Profile Picture</label>
+                    <input type="file" id="profile-picture" name="profile_picture" class="form-input" accept="image/*">
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="name">Full Name</label>
+                    <input type="text" id="name" name="name" class="form-input" value="{{ current_user.username }}" required>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="email">Email Address</label>
+                    <input type="email" id="email" name="email" class="form-input" value="{{ current_user.email }}" required>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="password">New Password</label>
+                    <input type="password" id="password" name="password" class="form-input" placeholder="Leave blank to keep current password">
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="confirm-password">Confirm Password</label>
+                    <input type="password" id="confirm-password" name="confirm_password" class="form-input" placeholder="Confirm new password">
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="gate_role">Gate Role</label>
+                    <select id="gate_role" name="gate_role" class="form-select">
+                      <option value="">-- Select Gate --</option>
+                      <option value="Gate 1" {{ 'selected' if current_user.gate_role == 'Gate 1' else '' }}>Gate 1</option>
+                      <option value="Gate 2" {{ 'selected' if current_user.gate_role == 'Gate 2' else '' }}>Gate 2</option>
+                      <option value="Gate 3" {{ 'selected' if current_user.gate_role == 'Gate 3' else '' }}>Gate 3</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="security-option">
+                  <div class="security-info">
+                    <div class="security-icon">
+                      <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <div class="security-details">
+                      <h4>Two-Factor Authentication</h4>
+                      <p>Add an extra layer of security to your account</p>
+                    </div>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" class="toggle-input" id="two-factor" name="two-factor" {% if current_user.two_factor_enabled %}checked{% endif %}>
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    Save 
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+         {% if qr_base64 and secret %}
+          <div class="settings-section" id="2fa-setup-section">
+            <div class="settings-card animate-in">
+              <div class="card-header">
+                <h2 class="card-title">
+                  <i class="fas fa-qrcode"></i>
+                  Two-Factor Authentication Setup
+                </h2>
+                <p class="card-subtitle">Scan the QR code below with your authenticator app</p>
+              </div>
+              <div class="card-content" style="text-align:center;">
+                <img src="data:image/png;base64,{{ qr_base64 }}" alt="TOTP QR Code" style="max-width:200px;">
+                <p>Or enter this code manually: <strong>{{ secret }}</strong></p>
+                <br>
+                <p>Use <b>Google Autheticator</b></Google> or other similar app.</p>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+
+        {% if current_user.role == 'admin' %} 
+        <div class="settings-section" id="create-account-section">
+          <div class="settings-card animate-in">
+            <div class="card-header">
+              <h2 class="card-title">
+                <i class="fas fa-user-plus"></i>
+                Create New Account
+              </h2>
+              <p class="card-subtitle">Add a new user to the system with appropriate permissions</p>
+            </div>
+            
+            <div class="card-content">
+              <form class="create-account-form" method="POST" action="{{ url_for('profile.create_account') }}">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label" for="new-username">Username</label>
+                    <input type="text" id="new-username" name="new_username" class="form-input" placeholder="Enter username" required>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="new-email">Email Address</label>
+                    <input type="email" id="new-email" name="new_email" class="form-input" placeholder="Enter email address" required>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="new-password">Password</label>
+                    <input type="password" id="new-password" name="new_password" class="form-input" placeholder="Enter password" required>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="confirm-new-password">Confirm Password</label>
+                    <input type="password" id="confirm-new-password" name="confirm_password" class="form-input" placeholder="Confirm password" required>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="gate_role">Gate Role</label>
+                    <select id="gate_role" name="gate_role" class="form-select">
+                      <option value="">-- Select Gate --</option>
+                      <option value="Gate 1">Gate 1</option>
+                      <option value="Gate 2">Gate 2</option>
+                      <option value="Gate 3">Gate 3</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group full-width">
+                    <label class="form-label" for="role">User Role</label>
+                    <select id="role" name="role" class="form-select" required>
+                      <option value="">Select a role</option>
+                      <option value="user">User</option>
+                      <option value="admin">Administrator</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-user-plus"></i>
+                    Create
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+       {% endif %}  
+      </div>
+    </div>
+  </div>
+  <script src="{{ url_for('static', filename='js/tabswitching.js') }}" defer></script>
+{% endblock %}
+</body>
+</html>

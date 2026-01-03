@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VMS Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/Dashboard.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+</head>
+<body>
+
+{% extends 'base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Header -->
+    <header class="header">
+      <h1 class="header-title">Dashboard Overview</h1>
+      {% include 'includes/user_menu.html' %}
+    </header>
+
+    <!-- Dashboard Content -->
+    <main class="dashboard-content">
+      <!-- Stats Cards -->
+      <div class="stats-grid">
+      <a href="{{ url_for('main.logs') }}" class="stat-card animate-in">
+          <div class="stat-header">
+            <div>
+              <div class="stat-title">Visitors Today</div>
+              <div class="stat-value">{{ visitor_today }}</div>
+            </div>
+            <div class="stat-icon visitors">
+              <i class="fas fa-users"></i>
+            </div>
+          </div>
+      </a>
+        <div class="stat-card animate-in">
+          <div class="stat-header">
+            <div>
+              <div class="stat-title">Currently Checked In</div>
+              <div class="stat-value">{{ checked_in }}</div>
+            </div>
+            <div class="stat-icon checked-in">
+              <i class="fas fa-user-check"></i>
+            </div>
+          </div>
+        </div>
+      <a href="{{ url_for('request_bp.request_page', filter_date=today_date_str) }}" class="stat-card animate-in">
+          <div class="stat-header">
+            <div>
+              <div class="stat-title">Registered Today</div>
+              <div class="stat-value">{{ registered_today }}</div>
+            </div>
+            <div class="stat-icon pending">
+              <i class="fas fa-user-plus"></i>
+            </div>
+          </div>
+      </a>
+      </div>
+
+      <!-- Recent Visitors Table -->
+      <div class="table-section animate-in">
+        <div class="table-header">
+          <h2 class="table-title">Recent Visitors</h2>
+        </div>
+        <table class="visitors-table">
+          <thead>
+              <tr>
+                <th>Name</th>
+                <th>Destination</th>
+                <th>Purpose</th>
+                <th>Address</th>
+                <th>Approved By</th>
+                <th>Check-In</th>
+                <th>Check-Out</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+          <tbody>
+            {% if logs %}
+              {% for log in logs %}
+              <tr class="animate-in">
+                <td>{{ log.name }}</td>
+                <td>{{ log.destination }}</td>
+                <td>{{ log.purpose }}</td>
+                <td>{{ log.address }}</td>
+                <td>{{ log.admin_username or '—' }}</td>
+                
+                <!-- ✅ Check-In with Tooltip -->
+                <td>
+                  {% if log.check_in_time %}
+                    <span class="status-badge status-in tooltip">
+                      {{ log.check_in_time | ph_time_only }}
+                      <i class="fas fa-info-circle info-icon"></i>
+                      <span class="tooltiptext">
+                        <strong>Entry:</strong> {{ log.gate_in or '—' }}<br>
+                        <strong>Scanned By:</strong> {{ log.checked_in_by or '—' }}
+                      </span>
+                    </span>
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+
+                <!-- ✅ Check-Out with Tooltip -->
+                <td>
+                  {% if log.check_out_time %}
+                    <span class="status-badge status-out tooltip">
+                      {{ log.check_out_time | ph_time_only }}
+                      <i class="fas fa-info-circle info-icon"></i>
+                      <span class="tooltiptext">
+                        <b>Exit:</b> {{ log.gate_out or '—' }}<br>
+                        <b>Scanned By:</b> {{ log.checked_out_by or '—' }}
+                      </span>
+                    </span>
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+                
+                <td>
+                  {% if log.visit_date %}
+                    {{ log.visit_date.strftime('%B %d, %Y') }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="7">
+                  <div class="empty-state">
+                    <i class="fas fa-users"></i>
+                    <h3>No visitors yet</h3>
+                    <p>Visitors will appear here once they check in</p>
+                  </div>
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+    </main>
+  </div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+  const socket = io();
+
+  socket.on('dashboard_update', function() {
+    console.log('Received dashboard_update event');
+    location.reload();
+  });
+</script>
+
+{% endblock %}
+</body>
+</html>

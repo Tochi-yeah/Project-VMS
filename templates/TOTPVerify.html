@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VMS Two-Factor Authentication</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/Login.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="left">
+            <img src="{{ url_for('static', filename='images/icc-balayan.jpg') }}" alt="Logo" class="logo">
+            <h1>Verify Your Identity</h1>
+            <p>Enter the 6-digit code from your authenticator app to continue</p>
+        </div>
+        <div class="right">
+            <h2 class="form-title">Two-Factor Authentication</h2>
+            <p class="form-subtitle">Please provide the code from your authenticator app</p>
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group">
+                    <label for="totp_code">Verification Code</label>
+                    <input type="text" placeholder="Input code" id="token" name="token" maxlength="6" required>
+                </div>
+                <button type="submit" class="submit-btn">Verify</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

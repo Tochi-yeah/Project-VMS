@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiple Visitor Registration</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/Multi-form-entry.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="left">
+            <img src="{{ url_for('static', filename='images/icc-balayan.jpg') }}" alt="Logo" class="logo">
+            <h1>Welcome to ICC Balayan!</h1>
+            <p>Multiple Registration.</p>
+        </div>
+        <div class="right">
+            <h2 class="form-title">Multiple Form Registration</h2>
+            <p class="form-subtitle">Enter your details:</p>
+        <form action="{{ url_for('request_bp.multi_form_entry') }}" method="POST" id="multi-visitor-form">
+            <div id="visitor-forms">
+                <div class="visitor-form">
+                  <h3 class="visitor-label">Visitor 1</h3>
+                  <div class="name-group">
+                      <div class="form-group">
+                          <label for="first_name_1">First Name</label>
+                          <input type="text" id="first_name_1" name="first_name_1" placeholder="e.g, John " required>
+                      </div>
+                      <div class="form-group">
+                          <label for="last_name_1">Last Name</label>
+                          <input type="text" id="last_name_1" name="last_name_1" placeholder="e.g, Doe" required>
+                      </div>
+                      <div class="form-group">
+                          <label for="middle_initial_1">M.I.</label>
+                          <input type="text" id="middle_initial_1" placeholder="Optional" name="middle_initial_1">
+                      </div>
+                  </div>
+                  <div class="form-group">
+                      <label for="phone_1">Cellular Number</label>
+                      <input type="tel" id="phone_1" name="phone_1" placeholder="Phone number currently used" required>
+                  </div>
+                  <div class="form-group">
+                      <label for="email_1">Email Address</label>
+                      <div class="email-input-group">
+                          <input type="email" id="email_1" name="email_1" placeholder="e.g, john.doe@example.com" required>
+                          <div class="checkbox-inline">
+                              <input type="checkbox" id="no_email_1" name="no_email_1">
+                              <label for="no_email_1">No Email</label>
+                          </div>
+                      </div>
+                  </div>
+                  
+                  <div class="form-group">
+                      <label for="destination_1">Destination</label>
+                      <select id="destination_1" name="destination_1" required>
+                          <option value="" disabled selected>Select Destination</option>
+                          <option value="Registrar's Office">Registrar's Office</option>
+                          <option value="Cashier's Office">Cashier's Office</option>
+                          <option value="Principal's Office">Principal's Office</option>
+                          <option value="Guidance Office">Guidance Office</option>
+                          <option value="School Clinic">School Clinic</option>
+                          <option value="Library">Library</option>
+                          <option value="Faculty Room">Faculty Room</option>
+                          <option value="Laboratory">Laboratory</option>
+                          <option value="Canteen">Canteen</option>
+                          <option value="Other">Other</option>
+                      </select>
+                  </div>
+
+                  <div class="form-group">
+                      <label for="purpose_1">Purpose of Visit</label>
+                      <select id="purpose_1" name="purpose_1" required>
+                          <option value="" disabled selected>Select Purpose</option>
+                          <option value="Meeting">Meeting</option>
+                          <option value="Campus Tour">Campus Tour</option>
+                          <option value="Event">Event</option>
+                          <option value="Other">Other</option>
+                      </select>
+                      <div class="other-purpose-group" id="other-purpose_1">
+                          <label for="other_purpose_1">Specify Other Purpose</label>
+                          <input type="text" id="other_purpose_1" name="other_purpose_1">
+                      </div>
+                  </div>
+
+                  
+                  <div class="form-group">
+                    <label for="address_1">Address</label>
+                    <input type="text" id="address_1" name="address_1" placeholder="e.g, Lanatan,Balayan,Batangas" required >
+                </div>
+                  <button type="button" class="remove-btn">Remove Visitor</button>
+              </div>
+            </div>
+            <button type="button" class="add-btn">+ Add Another Visitor</button>
+            <button type="submit" class="submit-btn">Register All</button>
+        </form>
+            <a href="{{ url_for('request_bp.online_reg') }}" class="back-to-login">Go Back to Single Registration?</a>
+            <a href="{{ url_for('request_bp.public_help') }}" class="back-to-login">Need Help? (FAQ)</a>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% set category, message = messages[-1] %}
+                <div id="flash-message" data-message="{{ message }}" data-category="{{ category }}"></div>
+              {% endif %}
+            {% endwith %}
+
+        </div>
+    </div>
+
+    <div id="toast-notification" class="toast"></div>
+
+<script>
+function updateVisitorLabels() {
+    document.querySelectorAll('.visitor-form').forEach(function(form, idx) {
+        let label = form.querySelector('.visitor-label');
+        if (!label) {
+            label = document.createElement('h3');
+            label.className = 'visitor-label';
+            form.insertBefore(label, form.firstChild);
+        }
+        label.textContent = 'Visitor ' + (idx + 1);
+    });
+}
+
+// For dynamically added visitor forms
+function setupVisitorFormEvents(form) {
+    // Purpose logic
+    const purposeSelect = form.querySelector('select[name^="purpose"]');
+    const otherPurposeDiv = form.querySelector('.other-purpose-group');
+    const otherPurposeInput = form.querySelector('input[name^="other_purpose"]');
+    if (purposeSelect && otherPurposeDiv && otherPurposeInput) {
+        purposeSelect.addEventListener('change', function() {
+            if (this.value === 'Other') {
+                otherPurposeDiv.classList.add('show');
+                otherPurposeInput.setAttribute('required', 'required');
+            } else {
+                otherPurposeDiv.classList.remove('show');
+                otherPurposeInput.removeAttribute('required');
+                otherPurposeInput.value = '';
+            }
+        });
+    }
+    // Email logic
+    const noEmailCheckbox = form.querySelector('input[name^="no_email"]');
+    const emailInput = form.querySelector('input[name^="email"]');
+    if (noEmailCheckbox && emailInput) {
+        // Set initial state
+        if (noEmailCheckbox.checked) {
+            emailInput.removeAttribute('required');
+            emailInput.value = '';
+            emailInput.disabled = true;
+        } else {
+            emailInput.disabled = false;
+            emailInput.setAttribute('required', 'required');
+        }
+        noEmailCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                emailInput.removeAttribute('required');
+                emailInput.value = '';
+                emailInput.disabled = true;
+            } else {
+                emailInput.disabled = false;
+                emailInput.setAttribute('required', 'required');
+            }
+        });
+    }
+    // Remove button logic
+    const removeBtn = form.querySelector('.remove-btn');
+    if (removeBtn) {
+        removeBtn.addEventListener('click', function() {
+            // Only remove if more than one visitor form exists
+            if (document.querySelectorAll('.visitor-form').length > 1) {
+                form.remove();
+                updateVisitorLabels();
+            }
+        });
+    }
+}
+
+// Initial setup for the first form
+document.querySelectorAll('.visitor-form').forEach(setupVisitorFormEvents);
+
+// Add another visitor logic
+document.querySelector('.add-btn').addEventListener('click', function() {
+    const formsContainer = document.getElementById('visitor-forms');
+    const formCount = formsContainer.querySelectorAll('.visitor-form').length;
+    const newIndex = formCount + 1;
+    // Clone the first form
+    const firstForm = formsContainer.querySelector('.visitor-form');
+    const newForm = firstForm.cloneNode(true);
+
+    // Update all input/select IDs and names in the cloned form
+    newForm.querySelectorAll('input, select, label').forEach(function(el) {
+        if (el.id) {
+            el.id = el.id.replace(/\d+$/, newIndex);
+        }
+        if (el.name) {
+            el.name = el.name.replace(/\d+$/, newIndex);
+        }
+        if (el.htmlFor) {
+            el.htmlFor = el.htmlFor.replace(/\d+$/, newIndex);
+        }
+        // Clear values for inputs
+        if (el.tagName === 'INPUT') {
+            if (el.type === 'checkbox' || el.type === 'radio') {
+                el.checked = false;
+            } else {
+                el.value = '';
+            }
+            el.disabled = false;
+        }
+        if (el.tagName === 'SELECT') {
+            el.selectedIndex = 0;
+        }
+    });
+
+    // Hide "Other Purpose" field by default
+    const otherPurposeDiv = newForm.querySelector('.other-purpose-group');
+    if (otherPurposeDiv) {
+        otherPurposeDiv.classList.remove('show');
+    }
+
+    formsContainer.appendChild(newForm);
+    setupVisitorFormEvents(newForm);
+    updateVisitorLabels();
+});
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const flashElement = document.getElementById("flash-message");
+        if (flashElement) {
+            const message = flashElement.dataset.message;
+            const toast = document.getElementById("toast-notification");
+            toast.textContent = message;
+            toast.classList.add("show");
+
+            setTimeout(function () {
+              toast.classList.remove("show");
+            }, 3500); // toast visible for 3.5 seconds
+        }
+    });
+</script>
+
+</body>
+</html>

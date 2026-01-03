@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Successful - ICC Balayan</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/Visitor-register.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        .right {
+            text-align: center;
+        }
+        .qr-section {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .qr-section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+        .qr-code-canvas {
+            width: 150px !important;
+            height: 150px !important;
+            margin: 0 auto 10px;
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+        }
+        .visitor-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            text-align: left;
+        }
+        .visitor-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .visitor-item-info {
+            font-size: 14px;
+        }
+        .visitor-item-info strong {
+            font-size: 16px;
+            color: var(--text-primary);
+            display: block;
+        }
+        .download-btn {
+            padding: 12px 20px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 8px;
+        }
+        .download-btn:hover {
+            background: #059669;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left">
+            <img src="{{ url_for('static', filename='images/icc-balayan.jpg') }}" alt="Logo" class="logo">
+            <h1>Registration Complete!</h1>
+            <p>Your group is now registered.</p>
+        </div>
+        <div class="right">
+            
+            <h2 class="form-title">Registration Successful!</h2>
+            <p class="form-subtitle">
+                The {{ visitors|length }} visitor(s) below are registered.
+                <br>Please screenshot or download these QR codes.
+            </p>
+
+            {% if group_code %}
+            <div class="qr-section">
+                <h3 class="qr-section-title">
+                    <i class="fas fa-users"></i>
+                    Group QR Code
+                </h3>
+                <p class="form-subtitle" style="font-size: 13px; margin-bottom: 16px;">Scan this single code to check in all {{ visitors|length }} members at once.</p>
+                <div class="qr-code-canvas" id="qr-group-{{ group_code }}"></div>
+                <button class="download-btn" data-qr-id="qr-group-{{ group_code }}" data-filename="group-qr-{{ group_code }}.png">
+                    Download Group QR
+                </button>
+            </div>
+            {% endif %}
+
+            <div class="qr-section">
+                <h3 class="qr-section-title">
+                    <i class="fas fa-user"></i>
+                    Individual QR Codes
+                </h3>
+                <p class="form-subtitle" style="font-size: 13px; margin-bottom: 24px;">Use these codes to check in/out one person at a time.</p>
+                <div class="visitor-list">
+                    {% for visitor in visitors %}
+                    <div class="visitor-item">
+                        <div class="qr-code-canvas" id="qr-indiv-{{ visitor.unique_code }}"></div>
+                        <div class="visitor-item-info">
+                            <strong>{{ visitor.name }}</strong>
+                            <code>{{ visitor.unique_code }}</code>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <a href="{{ url_for('request_bp.multi_form_entry') }}" class="back-to-login">Register another group</a>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script>
+        // Data passed from Flask
+        
+        // --- NEW FIX ---
+        // We pass the data as a string (inside quotes) to satisfy the linter,
+        // then parse it into a real JavaScript object.
+        // The |safe filter is critical to prevent quotes from being escaped.
+        const visitorDataString = '{{ visitors|tojson|safe }}';
+        const visitorData = JSON.parse(visitorDataString);
+        // --- END OF FIX ---
+        
+        const groupCode = "{{ group_code }}";
+
+        // Generate Individual QRs
+        // This part is the same as before
+        visitorData.forEach(visitor => {
+            new QRCode(document.getElementById(`qr-indiv-${visitor.unique_code}`), {
+                text: visitor.unique_code,
+                width: 128,
+                height: 128,
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        });
+
+        // Generate Group QR (if it exists)
+        if (groupCode) {
+            new QRCode(document.getElementById(`qr-group-${groupCode}`), {
+                text: groupCode,
+                width: 128,
+                height: 128,
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+
+        // Add logic for all download buttons
+        document.querySelectorAll('.download-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const qrDivId = e.currentTarget.dataset.qrId;
+                const filename = e.currentTarget.dataset.filename;
+                
+                const canvas = document.querySelector(`#${qrDivId} canvas`);
+                const link = document.createElement('a');
+                link.download = filename;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        });
+    </script>
+</body>
+</html>

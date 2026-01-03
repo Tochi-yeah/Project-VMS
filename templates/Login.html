@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VMS Login</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/Login.css') }}">
+</head>
+<body>
+    <div class="container">
+      <div class="left">
+          <img src="{{ url_for('static', filename='images/icc-balayan.jpg') }}" class="logo" alt="Logo">
+          <h1>Welcome to VMS!</h1>
+          <p>Log in to your account to view today's Visits</p>
+      </div>
+      <div class="right">
+          <h2 class="form-title">Login</h2>
+          <p class="form-subtitle">Enter your credentials to access the VMS</p>
+          
+          <form method="POST" action="{{ url_for('auth.login') }}">
+              {{ form.hidden_tag() }} <div class="form-group">
+                  {{ form.email.label }}
+                  {{ form.email(placeholder="Email", required=true) }}
+                  {% for error in form.email.errors %}
+                      <div class="flash danger">{{ error }}</div>
+                  {% endfor %}
+              </div>
+              
+              <div class="form-group">
+                  {{ form.password.label }}
+                  {{ form.password(placeholder="Password", required=true) }}
+                  {% for error in form.password.errors %}
+                      <div class="flash danger">{{ error }}</div>
+                  {% endfor %}
+              </div>
+              
+              <div class="form-group remember-me-group">
+                    <label for="{{ form.remember_me.id }}" class="remember-me-label">
+                        {{ form.remember_me() }}
+                        Remember Me
+                    </label>
+              </div>
+
+              {{ form.submit(class="submit-btn") }}
+          </form>
+
+          <a href="{{ url_for('auth.forgot_password') }}" class="forgot-password">Forgot Password?</a>
+          
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              <ul class="flashes">
+                {% for category, message in messages %}
+                  <li class="flash {{ category }}">{{ message }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          {% endwith %}
+      </div>  
+    </div>
+</body>
+</html>

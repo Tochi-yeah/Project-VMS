@@ -1,0 +1,37 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# VS Code settings (optional)
+.vscode/
+
+# Virtual environment
+venv/
+.env
+.env.*
+
+# SQLite / Local databases
+*.db
+
+# Render build artifacts (optional)
+instance/
+static/qrcodes/
+
+# WeasyPrint temp files
+*.pdf
+
+# Compiled files
+*.log
+
+# MacOS / Windows hidden files
+.DS_Store
+Thumbs.db
+
+# Python Files  
+debug_run.py
+
+# HTML files
+
+
+# CSS files

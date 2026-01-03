@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Visitor Logs PDF</title>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      color: #1e293b;
+      font-size: 9.5px;
+      margin: 0;
+      padding: 0;
+    }
+
+    h2 {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .table-wrapper {
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      overflow: hidden;
+      width: 100%;
+      margin: 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    th, td {
+      padding: 4px 5px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+      vertical-align: middle;
+      word-wrap: break-word;
+    }
+
+    th {
+      background: #f1f5f9;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-size: 8.5px;
+    }
+
+    td {
+      font-size: 9px;
+    }
+
+    tbody tr:nth-child(odd) {
+      background: #f8fafc;
+    }
+
+    .status-badge {
+      padding: 2px 5px;
+      border-radius: 999px;
+      font-size: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      display: inline-block;
+    }
+
+    .status-in {
+      background: rgba(16, 185, 129, 0.1);
+      color: #10b981;
+    }
+
+    .status-out {
+      background: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Visitor Logs <small style="font-weight: normal; font-size: 12px;">(Date: {{ filter_date }})</small></h2>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 2%;">#</th>
+          <th style="width: 14%;">Name</th>
+          <th style="width: 16%;">Email</th>
+          <th style="width: 12%;">Number</th>
+          <th style="width: 12%;">Purpose</th>
+          <th style="width: 12%;">Person to Visit</th>
+          <th style="width: 10%;">Check-In</th>
+          <th style="width: 12%;">Check-Out</th>
+          <th style="width: 10%;">Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ log.name }}</td>
+          <td>{{ log.email }}</td>
+          <td>{{ log.number }}</td>
+          <td>{{ log.purpose }}</td>
+          <td>{{ log.person_to_visit }}</td>
+          <td>
+            {% if log.check_in_time %}
+              <span class="status-badge status-in">{{ log.check_in_time | ph_time_only }}</span>
+            {% else %} — {% endif %}
+          </td>
+          <td>
+            {% if log.check_out_time %}
+              <span class="status-badge status-out">{{ log.check_out_time | ph_time_only }}</span>
+            {% else %} — {% endif %}
+          </td>
+          <td>
+            {% if log.visit_date %}
+              {{ log.visit_date.strftime('%b %d, %Y') }}
+            {% else %} — {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

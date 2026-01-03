@@ -1,0 +1,293 @@
+:root {
+    --primary-color: #2563eb;
+    --primary-dark: #1e40af;
+    --accent-color: #10b981;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --secondary-color: #f1f5f9;
+    --border-color: #e5e7eb;
+    --danger-color: #ef4444;
+    --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-image: url('../images/ICC_talangpaz.jpeg'); 
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.container {
+    display: flex;
+    max-width: 800px;
+    width: 100%;
+    min-height: 500px;
+    margin: 20px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+    transition: var(--transition);
+}
+
+.container:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 20px -4px rgba(0, 0, 0, 0.12);
+}
+
+.left {
+    flex: 1;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    padding: 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.left .logo {
+    width: 72px;
+    height: 72px;
+    border-radius: 12px;
+    object-fit: cover;
+    margin-bottom: 28px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    transition: var(--transition);
+}
+
+.left .logo:hover {
+    transform: scale(1.05);
+    border-color: white;
+}
+
+.left h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 16px;
+}
+
+.left p {
+    font-size: 16px;
+    font-weight: 400;
+    opacity: 0.9;
+}
+
+.right {
+    flex: 2;
+    padding: 32px;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.form-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.form-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--text-primary);
+    transition: var(--transition);
+    background: var(--secondary-color);
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.form-group .remember-me-label {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    text-transform: none;
+    letter-spacing: normal;
+    cursor: pointer;
+}
+
+.form-group input[type="checkbox"] {
+    width: auto;
+    margin-right: 8px;
+    accent-color: var(--primary-color);
+    cursor: pointer;
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    margin-top: 20px;
+}
+
+.submit-btn:hover {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+}
+
+.forgot-password {
+    display: block;
+    font-size: 14px;
+    color: var(--primary-color);
+    text-decoration: none;
+    margin-top: 12px;
+    font-weight: 500;
+    transition: var(--transition);
+    text-align: center;
+}
+
+.forgot-password:hover {
+    color: var(--primary-dark);
+    text-decoration: underline;
+}
+
+.flashes {
+  list-style-type: none;
+  padding: 0;
+  margin: 20px 0;
+}
+
+/* Default style for ANY flash message */
+.flash {
+  padding: 12px 20px;
+  margin-top: 10px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 14px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  animation: fadeIn 0.5s ease;
+  /* --- FIXED: Default visible style --- */
+  background-color: var(--secondary-color); /* Light gray background */
+  color: var(--text-primary); /* Dark text */
+}
+
+/* Specific overrides for categorized messages */
+.flash.success {
+  background-color: #27ae60;
+  color: #fff; /* White text for contrast */
+}
+
+.flash.danger {
+  background-color: #e74c3c;
+  color: #fff; /* White text for contrast */
+}
+
+.flash.info {
+  background-color: #3498db;
+  color: #fff; /* White text for contrast */
+}
+
+.flash.warning {
+  background-color: #f39c12;
+  color: #fff; /* White text for contrast */
+}
+
+.form-group .flash.danger {
+    margin-top: 10px;
+    text-align: left; 
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.container {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+@media (max-width: 1024px) {
+    .container {
+        flex-direction: column;
+        margin: 16px;
+        min-height: 450px;
+    }
+
+    .left {
+        padding: 32px;
+    }
+
+    .right {
+        padding: 24px;
+    }
+}
+
+@media (max-width: 768px) {
+    .left h1 {
+        font-size: 24px;
+    }
+
+    .left p {
+        font-size: 14px;
+    }
+
+    .left .logo {
+        width: 56px;
+        height: 56px;
+    }
+}

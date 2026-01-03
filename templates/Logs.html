@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VMS Visit logs</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/Logs.css') }}">  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+</head>
+<body>
+  
+  {% extends 'base.html' %}
+
+  {% block title %}Logs{% endblock %}
+
+  {% block content %} 
+
+<!-- Main Content -->
+<div class="main-content">
+  <!-- Header -->
+  <header class="header">
+    <h1 class="header-title">Visitor Logs</h1>
+    {% include 'includes/user_menu.html' %}
+  </header>
+
+  <!-- Dashboard Content -->
+  <main class="dashboard-content">
+    <div class="filter-container animate-in">
+      <form method="GET" action="{{ url_for('main.logs') }}" class="filter-form">
+        <select name="per_page">
+          <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+          <option value="25" {% if per_page == 25 %}selected{% endif %}>25</option>
+          <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+          <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+        </select>
+        <div class="search-input-wrapper">
+          <i class="fas fa-search"></i>
+          <input type="text" name="search_query" placeholder="Search by name" value="{{ search_query }}">
+        </div>
+        <input type="date" name="filter_date" value="{{ filter_date }}">
+        <button type="submit">
+          <i class="fas fa-filter"></i> Apply
+        </button>
+        <button type="button" class="table-action-btn" data-url="{{ url_for('main.logs') }}" onclick="location.href=this.dataset.url">
+          <i class="fas fa-times"></i> Clear
+        </button>
+      </form>
+    </div>
+
+    <div class="table-container animate-in">
+      <div class="table-header">
+        <h2 class="table-title">Visitor Logs</h2>
+        <div class="table-actions">
+          <a href="{{ url_for('download_log.export_logs_excel', filter_date=filter_date, search_query=search_query) }}" class="table-action-btn">
+            <i class="fas fa-file-excel"></i> Export Data
+          </a>
+        </div>
+      </div>
+      <table id="customers">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Number</th>
+            <th>Destination</th>
+            <th>Purpose</th>
+            <th>Address</th>
+            <th>Approved By</th>
+            <th>Check-In</th>
+            <th>Check-Out</th>
+            <th>Code</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+            <tr>
+              <td>{{ loop.index + pagination.per_page * (pagination.page - 1) }}</td>
+              <td>{{ log.name }}</td>
+              <td>{{ log.email }}</td>
+              <td>{{ log.number }}</td>
+              <td>{{ log.destination }}</td>
+              <td>{{ log.purpose }}</td>
+              <td>{{ log.address }}</td>
+              <td>{{ log.approved_by or '—' }}</td> <!-- ✅ Display Approver's Name -->
+
+              <!-- ✅ Check-In with your requested tooltip design -->
+              <td>
+                {% if log.check_in_time %}
+                  <span class="status-badge status-in tooltip">
+                    {{ log.check_in_time | ph_time_only }}
+                    <i class="fas fa-info-circle info-icon"></i>
+                    <span class="tooltiptext">
+                      <strong>Entry:</strong> {{ log.gate_in or '—' }}<br>
+                      <strong>Scanned By:</strong> {{ log.checked_in_by or '—' }}
+                    </span>
+                  </span>
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <!-- ✅ Check-Out with your requested tooltip design -->
+              <td>
+                {% if log.check_out_time %}
+                  <span class="status-badge status-out tooltip">
+                    {{ log.check_out_time | ph_time_only }}
+                    <i class="fas fa-info-circle info-icon"></i>
+                    <span class="tooltiptext">
+                      <b>Exit:</b> {{ log.gate_out or '—' }}<br>
+                      <b>Scanned By:</b> {{ log.checked_out_by or '—' }}
+                    </span>
+                  </span>
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td>{{ log.unique_code }}</td>
+              <td>{{ log.visit_date.strftime('%B %d, %Y') if log.visit_date else '—' }}</td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="12">
+                <div class="empty-state">
+                  <i class="fas fa-users"></i>
+                  <h3>No logs yet</h3>
+                  <p>Visitors will appear here once they check in</p>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if pagination and pagination.pages > 1 %}
+      <div class="pagination-container animate-in">
+        <nav aria-label="Logs pagination">
+          <ul class="pagination-list">
+            <li class="pagination-item">
+              <a class="pagination-link" href="{{ url_for('main.logs', page=1, filter_date=filter_date, search_query=search_query, per_page=per_page) }}">
+                <i class="fas fa-angle-double-left"></i> First
+              </a>
+            </li>
+            <li class="pagination-item">
+              <a class="pagination-link" href="{{ url_for('main.logs', page=pagination.prev_num, filter_date=filter_date, search_query=search_query, per_page=per_page) }}">
+                <i class="fas fa-angle-left"></i> Prev
+              </a>
+            </li>
+            <li class="pagination-item pagination-current">
+              Page {{ pagination.page }} of {{ pagination.pages }}
+            </li>
+            <li class="pagination-item">
+              <a class="pagination-link" href="{{ url_for('main.logs', page=pagination.next_num, filter_date=filter_date, search_query=search_query, per_page=per_page) }}">
+                Next <i class="fas fa-angle-right"></i>
+              </a>
+            </li>
+            <li class="pagination-item">
+              <a class="pagination-link" href="{{ url_for('main.logs', page=pagination.pages, filter_date=filter_date, search_query=search_query, per_page=per_page) }}">
+                Last <i class="fas fa-angle-double-right"></i>
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+      {% endif %}
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+  const socket = io();
+
+  socket.on('dashboard_update', function() {
+    console.log('Received dashboard_update event (logs)');
+    location.reload();
+  });
+</script>
+
+{% endblock %}
+</body>
+</html>

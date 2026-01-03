@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VMS Registered Requests</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/Request.css') }}">  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+   {% extends 'base.html' %}
+   {% block title %}Registered Requests{% endblock %}
+   {% block content %}
+
+  <div class="main-content">
+    <header class="header">
+      <h1 class="header-title">Registered Requests</h1>
+      {% include 'includes/user_menu.html' %}
+    </header>
+
+    <main class="request-content">
+
+      <input type="hidden" id="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="filter-container animate-in">
+        <form method="GET" action="{{ url_for('request_bp.request_page') }}" class="filter-form">
+          <select name="per_page" onchange="this.form.submit()">
+            <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+            <option value="25" {% if per_page == 25 %}selected{% endif %}>25</option>
+            <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+            <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+          </select>
+          <div class="search-input-wrapper">
+            <i class="fas fa-search"></i>
+            <input type="text" name="search_query" placeholder="Search by name..." value="{{ search_query or '' }}">
+          </div>
+          <input type="date" name="filter_date" value="{{ filter_date or '' }}">
+          <button type="submit">
+            <i class="fas fa-filter"></i> Apply
+          </button>
+          <a href="{{ url_for('request_bp.request_page', filter_date='') }}" class="table-action-btn" style="background-color: var(--danger-color);">
+            <i class="fas fa-times"></i> Clear
+          </a>
+        </form>
+      </div>
+
+      <div class="csv-upload-section animate-in">
+        <form method="POST" enctype="multipart/form-data" action="{{ url_for('request_bp.upload_csv') }}">
+          <label for="csv-file" class="btn btn-secondary">
+            <i class="fas fa-file-excel"></i> Upload
+          </label>
+          <input type="file" id="csv-file" name="file" accept=".csv,.xlsx" style="display:none;" onchange="this.form.submit()">
+        </form>
+        <a href="{{ url_for('download_template.download_bulk_template') }}" class="table-action-btn">
+          <i class="fas fa-file-excel"></i> Download Format
+        </a>
+        <p class="hint">Upload visitor requests in bulk using a CSV or XLSX file.</p>
+      </div>
+
+      <div class="table-section animate-in">
+        <div class="table-header">
+          <h2 class="table-title">Registered Visitors</h2>
+        </div>
+        <div style="overflow-x: auto;">
+          <table class="requests-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Destination</th>
+                <th>Purpose</th>
+                <th>Address</th>
+                <th>Code</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if groups %}
+                {% for group_code, group_requests in groups.items() %}
+                  {% if group_requests|length > 1 %}
+                    <tr class="group-row animate-in" data-group="{{ group_code }}">
+                      <td>{{ loop.index + pagination.per_page * (pagination.page - 1) }}</td>
+                      <td colspan="6"><strong>Group Request</strong> ({{ group_requests|length }} members)</td>
+                      <td><code>{{ group_code }}</code></td>
+                      <td>
+                        <form method="POST" action="{{ url_for('request_bp.direct_checkin_group', group_code=group_code) }}">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                          <button type="submit" class="scanner-btn primary" style="width:100%; padding: 8px 12px;">Check-In</button>
+                        </form>
+                      </td>
+                    </tr>
+                    {% for request in group_requests %}
+                      <tr class="child-row hidden animate-in" data-group="{{ group_code }}">
+                        <td></td>
+                        <td>{{ request.name }}</td>
+                        <td>{{ request.email }}</td>
+                        <td>{{ request.number }}</td>
+                        <td>{{ request.destination }}</td>
+                        <td>{{ request.purpose }}</td>
+                        <td>{{ request.address }}</td>
+                        <td><code>{{ request.unique_code }}</code></td>
+                        <td></td>
+                      </tr>
+                    {% endfor %}
+                  {% else %}
+                    {% set request = group_requests[0] %}
+                    <tr class="animate-in">
+                      <td>{{ loop.index + pagination.per_page * (pagination.page - 1) }}</td>
+                      <td>{{ request.name }}</td>
+                      <td>{{ request.email }}</td>
+                      <td>{{ request.number }}</td>
+                      <td>{{ request.destination }}</td>
+                      <td>{{ request.purpose }}</td>
+                      <td>{{ request.address }}</td>
+                      <td><code>{{ request.unique_code }}</code></td>
+                      <td>
+                        <form method="POST" action="{{ url_for('request_bp.direct_checkin', request_id=request.id) }}">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                          <button type="submit" class="scanner-btn primary" style="padding: 8px 12px;">Check-In</button>
+                        </form>
+                      </td>
+                    </tr>
+                  {% endif %}
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="9">
+                    <div class="empty-state">
+                      <i class="fas fa-users"></i>
+                      <h3>No Registered Visitors Found</h3>
+                      <p>Try clearing the date filter to see all visitors.</p>
+                    </div>
+                  </td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div> 
+        
+        {% if pagination and pagination.pages > 1 %}
+        <div class="pagination-container animate-in">
+          <nav aria-label="Logs pagination">
+            <ul class="pagination-list">
+              <li class="pagination-item">
+                <!-- MODIFIED: Added per_page to all links -->
+                <a class="pagination-link" href="{{ url_for('request_bp.request_page', page=1, filter_date=filter_date, search_query=search_query, per_page=per_page) }}">
+                  <i class="fas fa-angle-double-left"></i> First
+                </a>
+              </li>
+              <li class="pagination-item">
+                <a class="pagination-link" href="{{ url_for('request_bp.request_page', page=pagination.prev_num if pagination.has_prev else 1, filter_date=filter_date, search_query=search_query, per_page=per_page) }}">
+                  <i class="fas fa-angle-left"></i> Prev
+                </a>
+              </li>
+              <li class="pagination-item pagination-current">
+                Page {{ pagination.page }} of {{ pagination.pages }}
+              </li>
+              <li class="pagination-item">
+                <a class="pagination-link" href="{{ url_for('request_bp.request_page', page=pagination.next_num if pagination.has_next else pagination.pages, filter_date=filter_date, search_query=search_query, per_page=per_page) }}">
+                  Next <i class="fas fa-angle-right"></i>
+                </a>
+              </li>
+              <li class="pagination-item">
+                <a class="pagination-link" href="{{ url_for('request_bp.request_page', page=pagination.pages, filter_date=filter_date, search_query=search_query, per_page=per_page) }}">
+                  Last <i class="fas fa-angle-double-right"></i>
+                </a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="scanner-section animate-in">
+        <div class="scanner-header">
+          <h3 class="scanner-title">Visitor Code Check-In</h3>
+          <p class="scanner-subtitle">Enter a unique code to confirm or update purpose</p>
+        </div>
+        <div class="code-input-section">
+          <form id="code-form" class="code-form">
+            <input type="text" id="code-input" class="code-input" placeholder="Enter visitor code" autofocus required>
+            <button type="submit" class="scanner-btn primary">Submit Code</button>
+          </form>
+        </div>
+        <div id="result-display" class="result-display">Awaiting code...</div>
+      </div>
+    </main>
+  </div>
+
+  <!--
+  <div id="checkinModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Confirm Visitor Check-In</h3>
+        <button type="button" class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Checking in visitor: <strong id="modalVisitorName"></strong></p>
+        <form id="modalCheckinForm">
+          <input type="hidden" id="modalUniqueCode" name="unique_code">
+          <div class="form-group">
+            <label for="modalPurposeSelect">Purpose of Visit</label>
+            <select id="modalPurposeSelect" name="modal_purpose_select" class="form-input" required><option value="" disabled>Select Purpose</option><option value="Meeting">Meeting</option><option value="Campus Tour">Campus Tour</option><option value="Event">Event</option><option value="Other">Other</option></select>
+          </div>
+          <div class="form-group" id="modalOtherPurposeContainer" style="display: none;">
+            <label for="modalOtherPurposeInput">Specify Other Purpose</label>
+            <input type="text" id="modalOtherPurposeInput" name="modal_other_purpose" class="form-input">
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="scanner-btn secondary" onclick="closeModal()">Cancel</button>
+            <button type="submit" class="scanner-btn primary">Confirm Check-In</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  -->
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    const socket = io();
+    socket.on('request_update', () => location.reload());
+    document.querySelectorAll('.group-row').forEach(row => {
+      row.addEventListener('click', (e) => {
+        if (!e.target.closest('form')) {
+          const group = row.dataset.group;
+          document.querySelectorAll(`.child-row[data-group="${group}"]`).forEach(child => child.classList.toggle('hidden'));
+        }
+      });
+    });
+  </script>
+  <!--<script src="{{ url_for('static', filename='js/modal/Check-in-modal.js') }}" defer></script> -->
+   {% endblock %}
+</body>
+</html>

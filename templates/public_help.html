@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Help & FAQ - ICC Balayan</title>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/Visitor-register.css') }}">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        .faq-container {
+            width: 100%;
+            margin-top: 24px;
+        }
+
+        .faq-item {
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .faq-question {
+            /* Reset button styles */
+            background: none;
+            border: none;
+            width: 100%;
+            padding: 20px 0;
+            
+            /* Text & Layout */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-align: left;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .faq-question:hover {
+            color: var(--primary-color);
+        }
+
+        .faq-question span {
+            flex-grow: 1;
+            padding-right: 16px;
+        }
+
+        .faq-question .icon-plus,
+        .faq-question .icon-minus {
+            font-size: 14px;
+            color: var(--primary-color);
+        }
+
+        .icon-minus {
+            display: none; /* Hide minus by default */
+        }
+
+        .faq-answer {
+            /* Accordion collapse magic */
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            
+            /* Text styles */
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            padding: 0 10px 20px 0;
+        }
+
+        .faq-answer p {
+            margin-bottom: 12px;
+        }
+
+        .faq-answer ul {
+            list-style-type: disc;
+            padding-left: 20px;
+            margin-bottom: 12px;
+        }
+        
+        .faq-answer li {
+            margin-bottom: 8px;
+        }
+
+        /* --- Active State --- */
+        .faq-item.active .faq-question {
+            color: var(--primary-color);
+        }
+
+        .faq-item.active .faq-answer {
+            max-height: 600px; /* Animate open (increased height for more text) */
+        }
+
+        .faq-item.active .icon-plus {
+            display: none;
+        }
+
+        .faq-item.active .icon-minus {
+            display: block;
+        }
+
+        /* --- Back Link --- */
+        .back-link-container {
+            text-align: center;
+            margin-top: 24px;
+        }
+        
+        .back-link {
+            font-size: 14px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+        .back-link:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left">
+            <img src="{{ url_for('static', filename='images/icc-balayan.jpg') }}" alt="Logo" class="logo">
+            <h1>Help Center</h1>
+            <p>Frequently Asked Questions</p>
+        </div>
+        <div class="right">
+            
+            <h2 class="form-title">Visitor Registration FAQ</h2>
+            <p class="form-subtitle">Answers to common questions about registration.</p>
+
+            <div class="faq-container">
+
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>Do I have to register online?</span>
+                        <i class="fas fa-plus icon-plus"></i>
+                        <i class="fas fa-minus icon-minus"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>No, you are not required to register online. You can always register in person when you arrive at the campus. A System User (like a guard) will be happy to assist you by registering you on their dashboard.</p>
+                        <p>However, registering online beforehand is **highly recommended** as it makes your check-in process at the gate much faster.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>How do I register just myself?</span>
+                        <i class="fas fa-plus icon-plus"></i>
+                        <i class="fas fa-minus icon-minus"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>On the main "Visitor Registration" page, fill out all the required fields: your full name, phone number, purpose of visit, and address.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>What is "Multiple Registration?"</span>
+                        <i class="fas fa-plus icon-plus"></i>
+                        <i class="fas fa-minus icon-minus"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>This is a separate form designed for groups. If you are a group leader registering multiple people (like a family, sports team, or school tour), use the "Multiple Registration" link.</p>
+                        <p>On that page, you can click "+ Add Another Visitor" to create new forms for each member of your group. When you submit, the system will register everyone at once, which is much faster than using the single form repeatedly.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>Do I need an email address?</span>
+                        <i class="fas fa-plus icon-plus"></i>
+                        <i class="fas fa-minus icon-minus"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>No. The email field is completely optional.</p>
+                        <p>If you don't have an email or don't want to provide one, just check the **"No Email"** box on the form. Your registration will be submitted without it. Please see the "What happens after I register?" question for more details on this.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>What is the QR code and why do I need it?</span>
+                        <i class="fas fa-plus icon-plus"></i>
+                        <i class="fas fa-minus icon-minus"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>The QR code is your **permanent digital visitor pass**. It contains a unique, secure code (like <code>A8B2C4D6</code>) that identifies you in our system.</p>
+                        <p>You **must** present this code to the guard to be scanned. This is how the system:
+                        <ul>
+                            <li>Logs your **check-in** when you arrive.</li>
+                            <li>Logs your **check-out** when you leave.</li>
+                        </ul>
+                        It is the most important part of your visit and replaces the old paper logbooks.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>What happens after I register?</span>
+                        <i class="fas fa-plus icon-plus"></i>
+                        <i class="fas fa-minus icon-minus"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>After you click "Register," your visit is immediately logged in our system with an "Approve" status. A "Successfully registered!" message will appear.</p>
+                        <p><strong>If you provided an email:</strong><br>
+                        The system will automatically generate your permanent QR code and send it to your email address. Please check your spam or junk folder if you don't see it within a few minutes. Save this email for all future visits.</p>
+                        <p><strong>If you checked "No Email":</strong><br>
+                        You will *not* receive a QR code. Your registration is still successful. Please see the next question.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>I didn't get a QR code (or I checked "No Email"). What do I do?</span>
+                        <i class="fas fa-plus icon-plus"></i>
+                        <i class="fas fa-minus icon-minus"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Don't worry, your registration is still in the system.</p>
+                        <p>When you arrive at the campus, simply go to the guard and tell them your **full name**. They will use their dashboard to search for your name in the "Request" list, find your registration, and check you in by clicking the "Check-In" button next to your name.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>What if I made a mistake on my form?</span>
+                        <i class="fas fa-plus icon-plus"></i>
+                        <i class="fas fa-minus icon-minus"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>You cannot edit the form after submitting, but this is not a problem.</p>
+                        <p>When you arrive, just tell the guard about the mistake. If you have your QR code, they will scan it. A pop-up will appear on their screen, and they can select the correct purpose or update your information *before* they finalize your check-in.</V>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>Can I reuse my QR code for a future visit?</span>
+                        <i class="fas fa-plus icon-plus"></i>
+                        <i class="fas fa-minus icon-minus"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p><strong>Yes, absolutely.</strong> Your individual QR code is permanent and is tied to your name.</p>
+                        <p>You do not need to register again for future visits. Just show the same QR code to the guard. The system will recognize you, and the guard will simply ask you to confirm your purpose for the new visit.</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="back-link-container">
+                <a href="{{ url_for('request_bp.online_reg') }}" class="back-link">&larr; Back to Registration</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const faqQuestions = document.querySelectorAll('.faq-question');
+            
+            faqQuestions.forEach(button => {
+                button.addEventListener('click', () => {
+                    const item = button.closest('.faq-item');
+                    
+                    // Logic to close other open items, for a cleaner interface
+                    const allActive = document.querySelectorAll('.faq-item.active');
+                    allActive.forEach(activeItem => {
+                        if (activeItem !== item) {
+                            activeItem.classList.remove('active');
+                        }
+                    });
+
+                    // Toggle the clicked item
+                    item.classList.toggle('active');
+                });
+            });
+        });
+    </script>
+</body>
+</html>

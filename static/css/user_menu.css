@@ -1,0 +1,46 @@
+/* Header User Section */
+.header-user-section {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.welcome-message {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+  margin-right: 4px;
+}
+
+.welcome-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  margin-bottom: 2px;
+}
+
+.welcome-name {
+  font-size: 15px;
+  color: var(--text-primary);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+/* Responsive adjustments for welcome message */
+@media (max-width: 768px) {
+  .header-user-section {
+    gap: 12px;
+  }
+  
+  .welcome-message {
+    display: none; /* Hide welcome message on mobile to save space */
+  }
+}
+
+@media (max-width: 480px) {
+  .welcome-message {
+    display: none;
+  }
+}

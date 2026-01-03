@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/Dashboard.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script src="{{ url_for('static', filename='js/modal/global.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/modal/Check-in-modal.js') }}" defer></script>
+</head>
+<body>
+    {% include 'includes/navbar.html' %}
+   
+        {% block content %}
+        {% endblock %}
+
+
+    <div id="flash-container" style="display: none;">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash-message" data-category="{{ category }}" data-message="{{ message }}"></div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    </div>
+
+<script src="{{ url_for('static', filename='js/base.js') }}" defer></script>
+
+<div id="notification" class="notification"></div>
+
+    {% include 'includes/checkin_modal.html' %}
+</body>
+</html>

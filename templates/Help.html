@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VMS Help & FAQ</title>
+  
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/Setting.css') }}">
+  
+  <style>
+    .faq-group {
+      margin-bottom: 32px;
+    }
+    .faq-group-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 24px;
+      border-bottom: 2px solid var(--primary-color);
+      padding-bottom: 10px;
+    }
+    .faq-item {
+      margin-bottom: 28px;
+    }
+    .faq-question {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 10px;
+      position: relative;
+      padding-left: 28px;
+    }
+    .faq-question::before {
+      content: 'Q:';
+      position: absolute;
+      left: 0;
+      top: 0;
+      color: var(--primary-color);
+      font-weight: 700;
+    }
+    .faq-answer {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      padding-left: 28px;
+    }
+    .faq-answer code {
+      background: var(--secondary-color);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      color: var(--danger-color);
+    }
+    .faq-answer strong {
+      color: var(--text-primary);
+    }
+  </style>
+</head>
+<body>
+
+{% extends 'base.html' %}
+
+{% block title %}Help & FAQ{% endblock %}
+
+{% block content %}
+
+<div class="main-content">
+  <header class="header">
+    <h1 class="header-title">Help & FAQ</h1>
+    {% include 'includes/user_menu.html' %}
+  </header>
+
+  <div class="settings-content">
+    <div class="settings-container">
+      <div class="settings-card animate-in">
+        <div class="card-header">
+          <h2 class="card-title">
+            <i class="fas fa-question-circle"></i>
+            Frequently Asked Questions
+          </h2>
+        </div>
+        
+        <div class="card-content">
+          
+          <div class="faq-group">
+            <h3 class="faq-group-title">For System Users (Dashboard & Scanning)</h3>
+
+            <div class="faq-item">
+              <p class="faq-question">What's the difference between the "Request" page and the "Logs" page?</p>
+              <p class="faq-answer">
+                A: <strong>The "Request" page is for *registrations*</strong>. It shows all visitors who have registered, including those who haven't arrived yet. You use this page to find visitors by name.
+                <br><br>
+                <strong>The "Logs" page is for *history*</strong>. It shows the permanent record of all check-ins and check-outs that have already happened.
+              </p>
+            </div>
+
+            <div class="faq-item">
+              <p class="faq-question">What is a <code>unique_code</code>?</p>
+              <p class="faq-answer">
+                A: The <code>unique_code</code> is the **permanent ID** for a specific visitor. This code is inside their QR code and is what you scan. The system uses this code to find the visitor and all their past visits.
+              </p>
+            </div>
+
+            <div class="faq-item">
+              <p class="faq-question">What's the difference between a <code>unique_code</code> and a <code>group_code</code>?</p>
+              <p class="faq-answer">
+                A: A <code>unique_code</code> (like <code>A8B2C4D6</code>) belongs to **one person**.
+                <br><br>
+                A <code>group_code</code> (like <code>grp_XyZ123</code>) is given when you register a whole group at once (e.g., from an Excel upload). Scanning this one code gives you the option to check in **all members** of that group simultaneously.
+              </p>
+            </div>
+
+            <div class="faq-item">
+              <p class="faq-question">What is the "global scan" feature?</p>
+              <p class="faq-answer">
+                A: You can scan a QR code from <strong>any page</strong> of the dashboard (Dashboard, Logs, Analytics, etc.). As long as you are not clicked into a search bar or form, the system will "hear" the scan and automatically begin the check-in or check-out process.
+              </p>
+            </div>
+            
+            <div class="faq-item">
+              <p class="faq-question">How do I check in a visitor?</p>
+              <p class="faq-answer">
+                A: You have three ways:<br>
+                1. <strong>Global Scan (Fastest):</strong> From any page, just scan the visitor's QR code. The system will either check them in or open a pop-up to confirm their purpose.<br>
+                2. <strong>Manual Code Entry:</strong> On the <strong>Request</strong> page, type the visitor's <code>unique_code</code> into the "Visitor Code Check-In" box and press "Submit".<br>
+                3. <strong>Request List Button:</strong> On the <strong>Request</strong> page, find the visitor's name in the table and click the "Check-In" button. This will check them in instantly with the purpose they registered for.
+              </p>
+            </div>
+
+            <div class="faq-item">
+              <p class="faq-question">A visitor forgot their QR code. How do I check them in?</p>
+              <p class="faq-answer">
+                A: Go to the <strong>Request</strong> page. Use the search bar to find their name. Once you find them in the table, click the "Check-In" button next to their name.
+              </p>
+            </div>
+            
+            <div class="faq-item">
+              <p class="faq-question">How do I check a visitor *out*?</p>
+              <p class="faq-answer">
+                A: Simply scan their QR code again using the global scanner. The system sees they are currently "Checked-In" and will automatically log their "Check-Out".
+              </p>
+            </div>
+
+            <div class="faq-item">
+              <p class="faq-question">A large group just arrived. What's the fastest way to register them?</p>
+              <p class="faq-answer">
+                A: On the <strong>Request</strong> page, click the <strong>"Download Format"</strong> button. This gives you an Excel template. Fill it out with their names, phones, etc., and then use the <strong>"Upload"</strong> button to register them all at once.
+              </p>
+            </div>
+
+            <div class="faq-item">
+              <p class="faq-question">How do I check in an entire group at once?</p>
+              <p class="faq-answer">
+                A: You can either scan the "Group QR Code" (if the leader has it) or, on the <strong>Request</strong> page, find the group row and click the "Check-In" button for the entire group.
+              </p>
+            </div>
+
+            <div class="faq-item">
+              <p class="faq-question">What do "Approved By," "Checked-In By," and "Checked-Out By" mean?</p>
+              <p class="faq-answer">
+                A: <strong>"Approved By"</strong> is the admin who originally approved the visitor's *first-ever* registration.<br><br>
+                <strong>"Checked-In By"</strong> and <strong>"Checked-Out By"</strong> are the system users (guards) who were logged in when they physically scanned the visitor's code at the gate.
+              </p>
+            </div>
+
+            <div class="faq-item">
+              <p class="faq-question">What does the "Gate Role" (e.g., Gate 1) do?</p>
+              <p class="faq-answer">
+                A: Your "Gate Role" is set in your <strong>Settings</strong> page profile. When you check a visitor in or out, the system automatically records which gate you are assigned to (e.g., "Gate 1") in the log. This helps track visitor entry and exit points.
+              </p>
+            </div>
+
+            <div class="faq-item">
+              <p class="faq-question">How do I get a copy of the visitor logs?</p>
+              <p class="faq-answer">
+                A: Go to the <strong>Logs</strong> page. You can use the date and search filters to find the data you need, then click the <strong>"Export Data"</strong> button to download an Excel (<code>.xlsx</code>) file of the current view.
+              </p>
+            </div>
+
+            <div class="faq-item">
+              <p class="faq-question">What is the difference between the stats on the Dashboard?</p>
+              <p class="faq-answer">
+                A:<br>
+                &bull; <strong>Visitors Today:</strong> The total number of unique visitors who have *checked in* at least once today.<br>
+                &bull; <strong>Currently Checked In:</strong> The number of visitors who are *still inside* the campus right now (they have a "Checked-In" log but no matching "Checked-Out" log for today).<br>
+                &bull; <strong>Registered Today:</strong> The number of new visitors who *pre-registered* today via the online forms. This number is not related to check-ins.
+              </p>
+            </div>
+
+          </div>
+
+          <div class="faq-group">
+            <h3 class="faq-group-title">For Visitors (Registration Page)</h3>
+            
+            <div class="faq-item">
+              <p class="faq-question">How do visitors register?</p>
+              <p class="faq-answer">
+                A: Visitors can use the public <strong>Visitor Registration</strong> form or the <strong>"Multiple Registration"</strong> form for groups.
+              </p>
+            </div>
+
+            <div class="faq-item">
+              <p class="faq-question">Do visitors need an email address?</p>
+              <p class="faq-answer">
+                A: No. The form has a <strong>"No Email"</strong> checkbox they can use.
+              </p>
+            </div>
+
+            <div class="faq-item">
+              <p class="faq-question">Can visitors reuse their QR code?</p>
+              <p class="faq-answer">
+                A: Yes. A visitor's individual QR code is permanent. When they scan it on a new visit, they will be prompted to confirm their purpose.
+              </p>
+            </div>
+
+          </div>
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+</body>
+</html>

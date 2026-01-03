@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visitor Registration - ICC Balayan</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/Visitor-register.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="left">
+            <img src="{{ url_for('static', filename='images/icc-balayan.jpg') }}" alt="Logo" class="logo">
+            <h1>Welcome to ICC Balayan!</h1>
+            <p>Register to visit.</p>
+        </div>
+        <div class="right">
+            <h2 class="form-title">Visitor Registration</h2>
+            <p class="form-subtitle">Enter your details:</p>
+            <form action="/submit-request" method="POST">
+                <div class="name-group">
+                    <div class="form-group">
+                        <label for="first_name">First Name</label>
+                        <input type="text" id="first_name" name="first_name" placeholder="e.g, John " required>
+                    </div>
+                    <div class="form-group">
+                        <label for="last_name">Last Name</label>
+                        <input type="text" id="last_name" name="last_name" placeholder="e.g, Doe" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="middle_initial">M.I.</label>
+                        <input type="text" id="middle_initial" placeholder="Optional" name="middle_initial" maxlength="1">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="cell_number">Cellular Number</label>
+                    <input type="text" id="cell_number" name="cell_number" placeholder="Phone number currently used" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <div class="email-input-group">
+                        <input type="email" id="email" name="email" placeholder="e.g, john.doe@example.com">
+                        <div class="checkbox-inline">
+                            <input type="checkbox" id="no_email" name="no_email">
+                            <label for="no_email">No Email</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="destination" class="form-label">Destination</label>
+                    <select class="form-select" id="destination" name="destination" required>
+                        <option value="" selected disabled>Select Destination</option>
+                        <option value="Registrar's Office">Registrar's Office</option>
+                        <option value="Cashier's Office">Cashier's Office</option>
+                        <option value="Principal's Office">Principal's Office</option>
+                        <option value="Guidance Office">Guidance Office</option>
+                        <option value="School Clinic">School Clinic</option>
+                        <option value="Library">Library</option>
+                        <option value="Faculty Room">Faculty Room</option>
+                        <option value="Laboratory">Laboratory</option>
+                        <option value="Canteen">Canteen</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="purpose">Purpose of Visit</label>
+                    <select id="purpose" name="purpose" required>
+                        <option value="" disabled selected>Select Purpose</option>
+                        <option value="Meeting">Meeting</option>
+                        <option value="Campus Tour">Campus Tour</option>
+                        <option value="Event">Event</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <div class="other-purpose-group" id="other-purpose">
+                        <label for="other_purpose">Specify Other Purpose</label>
+                        <input type="text" id="other_purpose" name="other_purpose">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="address">Address</label>
+                    <input type="text" id="address" name="address" placeholder="e.g, Lanatan,Balayan,Batangas" required>
+                </div>
+                <button type="submit" class="submit-btn">Register</button>
+            </form>
+            <a href="{{ url_for('request_bp.multi_form_entry') }}" class="back-to-login">Multiple Registration?</a>
+            <a href="{{ url_for('request_bp.public_help') }}" class="back-to-login">Need Help? (FAQ)</a>
+        </div>
+    </div>
+    <script>
+        const purposeSelect = document.getElementById('purpose');
+        const otherPurposeDiv = document.getElementById('other-purpose');
+        const otherPurposeInput = document.getElementById('other_purpose');
+
+        purposeSelect.addEventListener('change', function() {
+            if (this.value === 'Other') {
+                otherPurposeDiv.classList.add('show');
+                otherPurposeInput.setAttribute('required', 'required');
+            } else {
+                otherPurposeDiv.classList.remove('show');
+                otherPurposeInput.removeAttribute('required');
+                otherPurposeInput.value = '';
+            }
+        });
+
+        const noEmailCheckbox = document.getElementById('no_email');
+        const emailInput = document.getElementById('email');
+
+        noEmailCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                emailInput.removeAttribute('required');
+                emailInput.value = '';
+                emailInput.disabled = true;
+            } else {
+                emailInput.disabled = false;
+                emailInput.setAttribute('required', 'required');
+            }
+        });
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const flashElement = document.getElementById("flash-message");
+            if (flashElement) {
+                const message = flashElement.dataset.message;
+                const toast = document.getElementById("toast-notification");
+                toast.textContent = message;
+                toast.classList.add("show");
+
+                setTimeout(function () {
+                toast.classList.remove("show");
+                }, 3500); // toast visible for 3.5 seconds
+            }
+            });
+    </script>
+
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'94fa23d1890e5de4',t:'MTc0OTkwNzM4Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+
+    <!-- Toast notification trigger -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% set category, message = messages[-1] %}
+        <div id="flash-message" data-message="{{ message }}" data-category="{{ category }}"></div>
+      {% endif %}
+    {% endwith %}
+
+
+    <div id="toast-notification" class="toast"></div>
+</body>
+</html>

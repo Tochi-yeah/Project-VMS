@@ -1,0 +1,59 @@
+<!-- templates/includes/navbar.html -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <img src="{{ url_for('static', filename='images/icc-balayan.jpg') }}" alt="Logo" class="logo">
+      <div class="brand-text">
+        <p>ICCBI</p>
+        Visitor Manager
+      </div>
+      
+      <button class="sidebar-toggle">
+        <i class="fas fa-chevron-left" id="toggle-icon"></i>
+      </button>
+    </div>
+    
+    <nav class="nav-menu">
+      <div class="nav-item">
+        <a href="{{ url_for('main.dashboard') }}" class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}">
+          <i class="fas fa-chart-pie nav-icon"></i>
+          <span class="nav-text">Dashboard</span>
+          <span class="nav-tooltip">Dashboard</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="{{ url_for('main.logs') }}" class="nav-link {% if request.endpoint == 'main.logs' %}active{% endif %}">
+          <i class="fas fa-users nav-icon"></i>
+          <span class="nav-text">Logs</span>
+          <span class="nav-tooltip">Logs</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="{{ url_for('request_bp.request_page') }}" class="nav-link {% if request.endpoint == 'request_bp.request_page' %}active{% endif %}">
+          <i class="fas fa-user-check nav-icon"></i>
+          <span class="nav-text">Request</span>
+          <span class="nav-tooltip">Request</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="{{ url_for('main.analytic') }}" class="nav-link {% if request.endpoint == 'main.analytic' %}active{% endif %}">
+          <i class="fas fa-chart-bar nav-icon"></i>
+          <span class="nav-text">Analytics</span>
+          <span class="nav-tooltip">Analytics</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="{{ url_for('main.setting') }}" class="nav-link {% if request.endpoint == 'main.setting' %}active{% endif %}">
+          <i class="fas fa-cog nav-icon"></i>
+          <span class="nav-text">Settings</span>
+          <span class="nav-tooltip">Settings</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="{{ url_for('main.help') }}" class="nav-link {% if request.endpoint == 'main.help' %}active{% endif %}">
+          <i class="fas fa-question-circle nav-icon"></i>
+          <span class="nav-text">Help</span>
+          <span class="nav-tooltip">Help</span>
+        </a>
+      </div>
+    </nav>
+  </div>

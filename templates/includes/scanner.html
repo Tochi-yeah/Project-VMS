@@ -1,0 +1,48 @@
+<input type="hidden" id="csrf_token" value="{{ csrf_token() }}">
+
+<div class="scanner-section animate-in">
+  <div class="scanner-header">
+    <h3 class="scanner-title">Visitor Code Check-In</h3>
+    <p class="scanner-subtitle">Enter a unique code to confirm or update purpose</p>
+  </div>
+  <div class="code-input-section">
+    <form id="code-form" class="code-form">
+      <input type="text" id="code-input" class="code-input" placeholder="Enter visitor code" required>
+      <button type="submit" class="scanner-btn primary">Submit Code</button>
+    </form>
+  </div>
+  <div id="result-display" class="result-display">Awaiting code...</div>
+</div>
+
+<div id="checkinModal" class="modal-backdrop" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Confirm Visitor Check-In</h3>
+      <button type="button" class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p>Checking in visitor: <strong id="modalVisitorName"></strong></p>
+      <form id="modalCheckinForm">
+        <input type="hidden" id="modalUniqueCode" name="unique_code">
+        <div class="form-group">
+          <label for="modalPurposeSelect">Purpose of Visit</label>
+          <select id="modalPurposeSelect" name="modal_purpose_select" class="form-input" required>
+            <option value="" disabled>Select Purpose</option>
+            <option value="Meeting">Meeting</option>
+            <option value="Campus Tour">Campus Tour</option>
+            <option value="Event">Event</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group" id="modalOtherPurposeContainer" style="display: none;">
+          <label for="modalOtherPurposeInput">Specify Other Purpose</label>
+          <input type="text" id="modalOtherPurposeInput" name="modal_other_purpose" class="form-input">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="scanner-btn secondary" onclick="closeModal()">Cancel</button>
+          <button type="submit" class="scanner-btn primary">Confirm Check-In</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

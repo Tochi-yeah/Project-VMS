@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Successful - ICC Balayan</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/Visitor-register.css') }}">
+    
+    <style>
+        .qr-code-container {
+            width: 256px;
+            height: 256px;
+            margin: 24px auto 16px;
+            padding: 16px;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .qr-code-container canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .download-btn {
+            width: 100%;
+            max-width: 256px;
+            padding: 14px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 24px;
+        }
+        
+        .download-btn:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left">
+            <img src="{{ url_for('static', filename='images/icc-balayan.jpg') }}" alt="Logo" class="logo">
+            <h1>Welcome to ICC Balayan!</h1>
+            <p>Your registration is complete.</p>
+        </div>
+        <div class="right" style="text-align: center;">
+            <h2 class="form-title">Registration Successful!</h2>
+            <p class="form-subtitle">
+                Hello, <strong>{{ name }}</strong>. Here is your permanent QR code.
+                <br>Please take a screenshot or download it.
+            </p>
+
+            <div class="qr-code-container" id="qr-code-canvas"></div>
+
+            <button id="download-btn" class="download-btn">Download QR Code</button>
+
+            <p class="form-subtitle" style="font-size: 12px;">
+                {% if email %}
+                A copy has also been sent to <strong>{{ email }}</strong> for your records.
+                {% else %}
+                You can save this QR code for all future visits.
+                {% endif %}
+            </p>
+            
+            <a href="{{ url_for('request_bp.online_reg') }}" class="back-to-login">Register another visitor</a>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script>
+        // Get the unique code from the template
+        const uniqueCode = "{{ unique_code }}";
+
+        // Generate the QR code
+        new QRCode(document.getElementById("qr-code-canvas"), {
+            text: uniqueCode,
+            width: 224,
+            height: 224,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+
+        // Add logic for the download button
+        document.getElementById('download-btn').addEventListener('click', () => {
+            const canvas = document.querySelector('#qr-code-canvas canvas');
+            const link = document.createElement('a');
+            link.download = `icc-visitor-qr-${uniqueCode}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+    </script>
+</body>
+</html>
