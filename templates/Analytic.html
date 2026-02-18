@@ -65,24 +65,17 @@
         <button class="download-btn" id="download-duration-chart">Download</button>
       </div>
       <div class="chart-card animate-in">
-        <h2 class="chart-title">Purpose Distribution</h2>
-        <div class="filter-desc" id="purpose-filter-desc" ></div>
-        <div id="purpose-chart" class="chart-container"></div>
-        <button class="download-btn" id="download-purpose-chart">Download</button>
+        <h2 class="chart-title">Destination Distribution</h2>
+        <div class="filter-desc" id="destination-filter-desc"></div>
+        <div id="destination-chart" class="chart-container"></div>
+        <button class="download-btn" id="download-destination-chart">Download</button>
       </div>
-      <div class="chart-card animate-in">
-        <h2 class="chart-title">Approved and Rejected Requests</h2>
-        <div class="filter-desc" id="request-filter-desc"></div>
-        <div id="request-chart" class="chart-container"></div>
-        <button class="download-btn" id="download-request-chart">Download</button>
-      </div>
-
+      
   <script src="{{ url_for('static', filename='js/Chart/Control.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/Chart/visitorTrendChart.js') }}"defer></script>
   <script src="{{ url_for('static', filename='js/Chart/topVisitorChart.js') }}"defer></script>
-  <script src="{{ url_for('static', filename='js/Chart/purposeChart.js') }}"defer></script>
+  <script src="{{ url_for('static', filename='js/Chart/destinationChart.js') }}"defer></script>
   <script src="{{ url_for('static', filename='js/Chart/durationChart.js') }}"defer></script>
-  <script src="{{ url_for('static', filename='js/Chart/approveRejectchart.js') }}"defer></script>
   <script src="{{ url_for('static', filename='js/Chart/downloadCharts.js') }}" defer></script>
   {% endblock %}
 </body>

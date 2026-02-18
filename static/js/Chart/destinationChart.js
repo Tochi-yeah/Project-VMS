@@ -1,33 +1,40 @@
-let currentPurposeFilter = "Last 7 Days";
+// Rename to destinationChart.js
+
+let currentDestinationFilter = "Last 7 Days";
 
 function formatDateStr(dateStr) {
   const d = new Date(dateStr);
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-function setPurposeFilterDesc(desc) {
-  document.getElementById("purpose-filter-desc").textContent = desc;
-  currentPurposeFilter = desc;
+function setDestinationFilterDesc(desc) {
+  // ⚠️ Make sure your HTML has id="destination-filter-desc"
+  const el = document.getElementById("destination-filter-desc");
+  if(el) {
+      el.textContent = desc;
+      currentDestinationFilter = desc;
+  }
 }
 
-function fetchPurposeChartData(params = {}) {
-  let url = "/api/purpose_distribution";
+function fetchDestinationChartData(params = {}) {
+  // 1. Update URL to new route
+  let url = "/api/destination_distribution";
   const query = new URLSearchParams(params).toString();
   if (query) url += "?" + query;
 
-  // Determine filter description (same as others)
   let filterDesc = "All Time";
   if (params.days) {
     filterDesc = params.days === "7" ? "Last 7 Days" : `Last ${params.days} Days`;
   } else if (params.start_date && params.end_date) {
     filterDesc = `${formatDateStr(params.start_date)} - ${formatDateStr(params.end_date)}`;
   }
-  setPurposeFilterDesc(filterDesc);
+  setDestinationFilterDesc(filterDesc);
 
   fetch(url)
     .then(response => response.json())
     .then(data => {
-      const purposes = data.map(entry => entry.purpose);
+      // 2. Map 'destination' from JSON
+      const destinations = data.map(entry => entry.destination);
       const values = data.map(entry => entry.count);
 
       const options = {
@@ -37,7 +44,7 @@ function fetchPurposeChartData(params = {}) {
           animations: { enabled: true, easing: 'easeinout', speed: 800 }
         },
         series: values,
-        labels: purposes,
+        labels: destinations, // 3. Use destinations as labels
         colors: [
           '#2563eb', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#f43f5e',
           '#14b8a6', '#8b5cf6', '#f87171', '#22d3ee', '#eab308', '#4ade80',
@@ -57,15 +64,20 @@ function fetchPurposeChartData(params = {}) {
         }]
       };
 
-      if (window.purposeChartInstance) {
-        window.purposeChartInstance.destroy();
+      if (window.destinationChartInstance) {
+        window.destinationChartInstance.destroy();
       }
-      window.purposeChartInstance = new ApexCharts(document.querySelector('#purpose-chart'), options);
-      window.purposeChartInstance.render();
+      
+      // ⚠️ Make sure your HTML has a div with id="destination-chart"
+      const chartEl = document.querySelector('#destination-chart');
+      if(chartEl) {
+        window.destinationChartInstance = new ApexCharts(chartEl, options);
+        window.destinationChartInstance.render();
+      }
     });
 }
 
-// Listen for global filter event ONLY
+// Listen for global filter event
 window.addEventListener("dateFilterChanged", (e) => {
-  fetchPurposeChartData(e.detail);
+  fetchDestinationChartData(e.detail);
 });

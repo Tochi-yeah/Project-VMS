@@ -45,48 +45,18 @@ def visit_durations():
     
     return jsonify(durations=result)
 
-
-@bp.route("/api/request_status_distribution")
+@bp.route("/api/destination_distribution")  # 1. Renamed Route
 @login_required
-def request_status_distribution():
-    start_date = request.args.get("start_date")
-    end_date = request.args.get("end_date")
-
-    manila_tz = 'Asia/Manila'
-    date_column = func.date(func.timezone(manila_tz, Request.timestamp))
-
-    query = db.session.query(
-        Request.status,
-        func.count(Request.id)
-    ).filter(Request.status.in_(["Approve", "Reject"]))
-
-    if start_date and end_date:
-        try:
-            start_dt = datetime.strptime(start_date, "%Y-%m-%d").date()
-            end_dt = datetime.strptime(end_date, "%Y-%m-%d").date()
-            query = query.filter(date_column.between(start_dt, end_dt))
-        except ValueError:
-            pass
-
-    statuses = query.group_by(Request.status).all()
-    result_dict = {'Approve': 0, 'Reject': 0}
-    for row in statuses:
-        result_dict[row.status] = row[1]
-    
-    result = [{'status': key, 'count': value} for key, value in result_dict.items()]
-    return jsonify(result)
-
-@bp.route("/api/purpose_distribution")
-@login_required
-def purpose_distribution():
+def destination_distribution():             # 2. Renamed Function
     start_date = request.args.get("start_date")
     end_date = request.args.get("end_date")
     
     manila_tz = 'Asia/Manila'
     date_column = func.date(func.timezone(manila_tz, VisitorLog.timestamp))
 
+    # 3. Query 'destination' instead of 'purpose'
     query = db.session.query(
-        VisitorLog.purpose,
+        VisitorLog.destination, 
         func.count(VisitorLog.id)
     ).filter(VisitorLog.status == "Checked-In")
 
@@ -98,10 +68,12 @@ def purpose_distribution():
         except ValueError:
             pass
 
-    logs = query.group_by(VisitorLog.purpose).order_by(func.count(VisitorLog.id).desc()).all()
-    result = [{'purpose': row.purpose, 'count': row[1]} for row in logs]
+    # 4. Group by 'destination'
+    logs = query.group_by(VisitorLog.destination).order_by(func.count(VisitorLog.id).desc()).all()
+    
+    # 5. Return JSON with 'destination' key
+    result = [{'destination': row.destination, 'count': row[1]} for row in logs]
     return jsonify(result)
-
 
 @bp.route("/api/top_visitors")
 @login_required
